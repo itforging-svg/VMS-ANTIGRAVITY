@@ -72,11 +72,13 @@ const VisitorForm = () => {
                     <div className="grid-2">
                         <div className="form-group">
                             <label>Full Name</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} required />
+                            <input type="text" name="name" value={formData.name} onChange={handleChange} />
+
                         </div>
                         <div className="form-group">
                             <label>Gender</label>
-                            <select name="gender" value={formData.gender} onChange={handleChange} required>
+                            <select name="gender" value={formData.gender} onChange={handleChange} >
+
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
                             </select>
@@ -86,54 +88,64 @@ const VisitorForm = () => {
                     <div className="grid-2">
                         <div className="form-group">
                             <label>Email Address</label>
-                            <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+                            <input type="email" name="email" value={formData.email} onChange={handleChange} />
+
                         </div>
                         <div className="form-group">
                             <label>Mobile Number</label>
-                            <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} required placeholder="10 digits" />
+                            <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} placeholder="10 digits" />
+
                         </div>
                     </div>
 
                     <div className="form-group">
                         <label>Place of Residence / Office Address</label>
-                        <input type="text" name="address" value={formData.address} onChange={handleChange} required />
+                        <input type="text" name="address" value={formData.address} onChange={handleChange} />
+
                     </div>
 
                     <div className="grid-2">
                         <div className="form-group">
                             <label>Company Name</label>
-                            <input type="text" name="company_name" value={formData.company_name} onChange={handleChange} required />
+                            <input type="text" name="company_name" value={formData.company_name} onChange={handleChange} />
+
                         </div>
                         <div className="form-group">
                             <label>Purpose of Visit</label>
-                            <input type="text" name="purpose" value={formData.purpose} onChange={handleChange} required />
+                            <input type="text" name="purpose" value={formData.purpose} onChange={handleChange} />
+
                         </div>
                     </div>
 
                     <div className="form-group">
                         <label>Whom to Visit</label>
-                        <input type="text" name="whom_to_visit" value={formData.whom_to_visit} onChange={handleChange} required placeholder="Employee Name / Dept" />
+                        <input type="text" name="whom_to_visit" value={formData.whom_to_visit} onChange={handleChange} placeholder="Employee Name / Dept" />
+
                     </div>
 
                     <div className="grid-2">
                         <div className="form-group">
                             <label>Date of Visit</label>
-                            <input type="date" name="visit_date" value={formData.visit_date} onChange={handleChange} required min={new Date().toISOString().split('T')[0]} />
+                            <input type="date" name="visit_date" value={formData.visit_date} onChange={handleChange} min={new Date().toISOString().split('T')[0]} />
+
                         </div>
                         <div className="form-group">
                             <label>Time of Visit</label>
-                            <input type="time" name="visit_time" value={formData.visit_time} onChange={handleChange} required />
+                            <input type="time" name="visit_time" value={formData.visit_time} onChange={handleChange} />
+
                         </div>
                     </div>
 
                     <div className="grid-2">
                         <div className="form-group">
                             <label>Approx Duration</label>
-                            <input type="text" name="visit_duration" value={formData.visit_duration} onChange={handleChange} placeholder="e.g. 2 hours" required />
+                            <input type="text" name="visit_duration" value={formData.visit_duration} onChange={handleChange} placeholder="e.g. 2 hours" />
+
                         </div>
                         <div className="form-group">
                             <label>Allowed Assets (Laptop/Mobile/Pendrive)</label>
-                            <select name="items_carried" value={formData.items_carried} onChange={handleChange} required>
+                            <select name="items_carried" value={formData.items_carried} onChange={handleChange} >
+
                                 <option value="None">None</option>
                                 <option value="Mobile Only">Mobile Only</option>
                                 <option value="Laptop Only">Laptop Only</option>
