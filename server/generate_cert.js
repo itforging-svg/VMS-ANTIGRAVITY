@@ -18,7 +18,7 @@ cert.validity.notAfter = new Date();
 cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 1);
 
 const attrs = [
-    { name: 'commonName', value: '192.168.0.131' },
+    { name: 'commonName', value: '192.168.0.22' },
     { name: 'countryName', value: 'US' },
     { shortName: 'ST', value: 'Virginia' },
     { name: 'localityName', value: 'Blacksburg' },
@@ -35,7 +35,7 @@ cert.setExtensions([
         name: 'subjectAltName',
         altNames: [
             { type: 2, value: 'localhost' },
-            { type: 7, ip: '192.168.0.131' },
+            { type: 7, ip: '192.168.0.22' },
             { type: 7, ip: '127.0.0.1' }
         ]
     }

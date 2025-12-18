@@ -16,7 +16,7 @@ export const RegisterVisitor = () => {
         company: '',
         host: '',
         purpose: 'Meeting',
-        plant: 'Forging',
+        plant: 'Seamsless Division',
         assets: '',
         customAsset: '',
         visitDate: new Date().toISOString().slice(0, 10),
@@ -77,7 +77,7 @@ export const RegisterVisitor = () => {
                 alert(`Welcome, ${result.name}. Please wait for approval.`);
                 setFormData({
                     name: '', gender: 'Male', mobile: '', email: '', address: '',
-                    company: '', host: '', purpose: 'Meeting', plant: 'Forging', assets: '', customAsset: '',
+                    company: '', host: '', purpose: 'Meeting', plant: 'Seamsless Division', assets: '', customAsset: '',
                     visitDate: new Date().toISOString().slice(0, 10),
                     visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
                     duration: '1 Hour'
@@ -230,10 +230,14 @@ export const RegisterVisitor = () => {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Plant to visit</label>
                                         <select name="plant" value={formData.plant} onChange={handleChange} className="input-field">
-                                            <option>Forging</option>
-                                            <option>NSTP</option>
-                                            <option>SMS</option>
-                                            <option>Bright-Bar</option>
+                                            <option>Seamsless Division</option>
+                                            <option>Forging Division</option>
+                                            <option>Main Plant</option>
+                                            <option>Bright Bar</option>
+                                            <option>Flat Bar</option>
+                                            <option>Wire Plant</option>
+                                            <option>Main Plant 2 ( SMS 2 )</option>
+                                            <option>40"Inch Mill</option>
                                         </select>
                                     </div>
                                     <div>

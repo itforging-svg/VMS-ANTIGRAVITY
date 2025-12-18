@@ -46,10 +46,14 @@ export default router;
 // Seed Admin - exported separately
 export async function seedAdmin() {
     const plants = [
-        { name: 'Forging', user: 'admin_forging' },
-        { name: 'NSTP', user: 'admin_nstp' },
-        { name: 'SMS', user: 'admin_sms' },
-        { name: 'Bright-Bar', user: 'admin_bright' }
+        { name: 'Seamsless Division', user: 'admin_seamless' },
+        { name: 'Forging Division', user: 'admin_forging' },
+        { name: 'Main Plant', user: 'admin_main' },
+        { name: 'Bright Bar', user: 'admin_bright' },
+        { name: 'Flat Bar', user: 'admin_flat' },
+        { name: 'Wire Plant', user: 'admin_wire' },
+        { name: 'Main Plant 2 ( SMS 2 )', user: 'admin_main2' },
+        { name: '40"Inch Mill', user: 'admin_40inch' }
     ];
 
     try {
@@ -61,6 +65,15 @@ export async function seedAdmin() {
             console.log('Super admin created: admin / admin123');
         }
 
+        // --- NEW LOGIC: Clean up old/unused admins ---
+        // Get all users who are NOT 'admin' and NOT in our new list
+        const validUsers = ['admin', ...plants.map(p => p.user)];
+        // Create parameter placeholders like $1, $2, $3...
+        const placeholders = validUsers.map((_, i) => `$${i + 1}`).join(', ');
+
+        await db.run(`DELETE FROM users WHERE username NOT IN (${placeholders})`, validUsers);
+        console.log('Cleaned up old/invalid admin accounts.');
+
         // Plant Admins
         for (const p of plants) {
             const user = await db.get('SELECT * FROM users WHERE username = $1', [p.user]);
@@ -68,6 +81,13 @@ export async function seedAdmin() {
                 const hash = await bcrypt.hash('admin123', 10);
                 await db.run('INSERT INTO users (username, password, plant) VALUES ($1, $2, $3)', [p.user, hash, p.name]);
                 console.log(`Plant admin created: ${p.user} / admin123 (${p.name})`);
+            } else {
+                // Determine if we need to update the plant name? 
+                // Mostly just ensuring the user exists. Ideally we might want to update the plant field if it changed (e.g. old admin_forging was 'Forging', now 'Forging Division')
+                if ((user as any).plant !== p.name) {
+                    await db.run('UPDATE users SET plant = $1 WHERE username = $2', [p.name, p.user]);
+                    console.log(`Updated plant for ${p.user} to ${p.name}`);
+                }
             }
         }
     } catch (e) {
