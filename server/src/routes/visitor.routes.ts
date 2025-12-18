@@ -38,6 +38,13 @@ router.get('/', authenticateToken, async (req, res) => {
             paramIndex++;
         }
 
+        // Filter by plant if user is not a super admin
+        if ((req as any).user && (req as any).user.plant) {
+            query += (status ? ' AND' : ' WHERE') + ` plant = $${paramIndex}`;
+            params.push((req as any).user.plant);
+            paramIndex++;
+        }
+
         query += ' ORDER BY id DESC';
 
         if (limit) {
@@ -61,6 +68,7 @@ router.get('/', authenticateToken, async (req, res) => {
             company: v.company,
             host: v.host,
             purpose: v.purpose,
+            plant: v.plant,
             assets: v.assets,
             photoPath: v.photo_path,
             status: v.status,
@@ -92,6 +100,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
             host: (visitor as any).host,
             visitDate: (visitor as any).visit_date,
             visitTime: (visitor as any).visit_time,
+            plant: (visitor as any).plant,
             assets: (visitor as any).assets,
             photoPath: (visitor as any).photo_path
         };
@@ -108,7 +117,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
         const {
             name, gender, mobile, email, address,
             visitDate, visitTime, duration,
-            company, host, purpose, assets
+            company, host, purpose, plant, assets
         } = req.body;
         // No required field validation - all fields optional
 
@@ -137,15 +146,15 @@ router.post('/', upload.single('photo'), async (req, res) => {
         const sql = `
             INSERT INTO visitors (
                 batch_no, name, gender, mobile, email, address,
-                visit_date, visit_time, duration, company, host, purpose, assets,
+                visit_date, visit_time, duration, company, host, purpose, plant, assets,
                 photo_path, status, entry_time
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'PENDING', $15)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'PENDING', $16)
             RETURNING *
         `;
 
         const params = [
             batchNo, name, gender, mobile, email || '', address || '',
-            visitDate, visitTime, duration, company, host, purpose, assets,
+            visitDate, visitTime, duration, company, host, purpose, plant, assets,
             photoPath, localTimeStr
         ];
 
@@ -171,6 +180,14 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     try {
         const { status } = req.body;
         const { id } = req.params;
+
+        // Check if visitor exists and belongs to the admin's plant
+        const visitor = await db.get('SELECT * FROM visitors WHERE id = $1', [id]);
+        if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
+
+        if ((req as any).user && (req as any).user.plant && (visitor as any).plant !== (req as any).user.plant) {
+            return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+        }
 
         if (!['APPROVED', 'REJECTED', 'EXITED'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status' });

@@ -10,6 +10,7 @@ interface Visitor {
     mobile: string;
     company: string;
     host: string;
+    plant: string;
     visitDate: string;
     visitTime: string;
     assets: string;
@@ -109,7 +110,7 @@ export const PrintSlip = () => {
                 {/* Footer Info */}
                 <div className="mt-3 border-t border-slate-400 pt-2 grid grid-cols-2 gap-4">
                     <div>
-                        <div className="text-xs font-bold uppercase text-slate-500">To Visit</div>
+                        <div className="text-xs font-bold uppercase text-slate-500">To Visit ({visitor.plant})</div>
                         <div className="font-bold">{visitor.host}</div>
                     </div>
                     <div>

@@ -22,8 +22,14 @@ export class Database {
                 CREATE TABLE IF NOT EXISTS users (
                     id SERIAL PRIMARY KEY,
                     username VARCHAR(255) UNIQUE NOT NULL,
-                    password VARCHAR(255) NOT NULL
+                    password VARCHAR(255) NOT NULL,
+                    plant VARCHAR(100)
                 )
+            `);
+
+            // Migration for existing users table
+            await pool.query(`
+                ALTER TABLE users ADD COLUMN IF NOT EXISTS plant VARCHAR(100)
             `);
 
             // Create Visitors Table
@@ -42,6 +48,7 @@ export class Database {
                     company VARCHAR(255),
                     host VARCHAR(255),
                     purpose VARCHAR(255),
+                    plant VARCHAR(100),
                     assets VARCHAR(255),
                     photo_path TEXT,
                     status VARCHAR(50) DEFAULT 'PENDING',
@@ -49,6 +56,11 @@ export class Database {
                     exit_time TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            `);
+
+            // Add plant column if it doesn't exist (for migration)
+            await pool.query(`
+                ALTER TABLE visitors ADD COLUMN IF NOT EXISTS plant VARCHAR(100)
             `);
 
             console.log('Connected to PostgreSQL database');

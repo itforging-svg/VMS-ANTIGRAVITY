@@ -9,7 +9,7 @@ router.get('/csv', authenticateToken, async (req, res) => {
         const { from, to } = req.query;
 
         let query = `
-            SELECT batch_no, name, mobile, company, host, purpose, visit_date, visit_time, entry_time, exit_time, status, photo_path 
+            SELECT batch_no, name, mobile, company, host, purpose, plant, assets, visit_date, visit_time, entry_time, exit_time, status, photo_path 
             FROM visitors
             WHERE 1=1
         `;
@@ -27,12 +27,19 @@ router.get('/csv', authenticateToken, async (req, res) => {
             paramIndex++;
         }
 
+        // Filter by plant
+        if ((req as any).user && (req as any).user.plant) {
+            query += ` AND plant = $${paramIndex}`;
+            params.push((req as any).user.plant);
+            paramIndex++;
+        }
+
         query += ' ORDER BY id DESC';
 
         const visitors = await db.all<any>(query, params);
 
         // Generate CSV
-        const headers = ['Batch No', 'Name', 'Mobile', 'Company', 'Host', 'Purpose', 'Visit Date', 'Visit Time', 'Entry Time', 'Exit Time', 'Status', 'Photo Link'];
+        const headers = ['Batch No', 'Name', 'Mobile', 'Company', 'Host', 'Purpose', 'Plant', 'Assets', 'Visit Date', 'Visit Time', 'Entry Time', 'Exit Time', 'Status', 'Photo Link'];
         const csvRows = [headers.join(',')];
 
         const baseUrl = `${req.protocol}://${req.get('host')}`;
@@ -46,6 +53,8 @@ router.get('/csv', authenticateToken, async (req, res) => {
                 `"${v.company}"`,
                 `"${v.host}"`,
                 `"${v.purpose}"`,
+                `"${v.plant || ''}"`,
+                `"${v.assets || ''}"`,
                 v.visit_date,
                 v.visit_time,
                 v.entry_time || '',

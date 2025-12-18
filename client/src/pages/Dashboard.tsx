@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown } from 'lucide-react';
 import { format, subDays, subMonths, subYears } from 'date-fns';
@@ -17,13 +16,12 @@ interface Visitor {
     exitTime: string | null;
     photoPath: string;
     mobile: string;
+    plant: string;
 }
 
 export const Dashboard = () => {
-    const { token, logout, username } = useAuth();
-    const navigate = useNavigate();
+    const { token, logout } = useAuth();
     const [visitors, setVisitors] = useState<Visitor[]>([]);
-    const [reportDuration, setReportDuration] = useState('7days');
     const [showReportMenu, setShowReportMenu] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
@@ -88,7 +86,9 @@ export const Dashboard = () => {
                         <div className="bg-amber-500 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-slate-900 text-lg shadow-lg shadow-amber-500/20">CS</div>
                         <div>
                             <h1 className="text-lg font-bold tracking-wide">CHANDAN STEEL LTD</h1>
-                            <div className="text-xs text-slate-400 uppercase tracking-widest">Admin Dashboard</div>
+                            <div className="text-xs text-slate-400 uppercase tracking-widest">
+                                {useAuth().plant ? `${useAuth().plant} Plant Admin` : 'Super Admin Dashboard'}
+                            </div>
                         </div>
                     </div>
 
@@ -154,7 +154,6 @@ export const Dashboard = () => {
                                         <button
                                             key={opt.val}
                                             onClick={() => {
-                                                setReportDuration(opt.val);
                                                 setShowReportMenu(false);
 
                                                 // Trigger Download
@@ -251,6 +250,7 @@ export const Dashboard = () => {
                                             <td className="p-4">
                                                 <div className="text-sm font-medium text-slate-700">{v.company}</div>
                                                 <div className="text-xs text-slate-500">Purpose: {v.purpose}</div>
+                                                <div className="text-xs font-bold text-amber-600 mt-1">Plant: {v.plant || 'N/A'}</div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-xs font-bold text-slate-500">IN</div>

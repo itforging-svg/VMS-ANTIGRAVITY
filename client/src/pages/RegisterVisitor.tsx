@@ -16,7 +16,9 @@ export const RegisterVisitor = () => {
         company: '',
         host: '',
         purpose: 'Meeting',
+        plant: 'Forging',
         assets: '',
+        customAsset: '',
         visitDate: new Date().toISOString().slice(0, 10),
         visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         duration: '1 Hour'
@@ -55,7 +57,14 @@ export const RegisterVisitor = () => {
 
             // Add form data
             Object.keys(formData).forEach(key => {
-                data.append(key, (formData as any)[key]);
+                if (key === 'customAsset') return;
+
+                let value = (formData as any)[key];
+                if (key === 'assets' && value === 'Other') {
+                    value = formData.customAsset;
+                }
+
+                data.append(key, value);
             });
 
             const response = await fetch(`${API_URL}/api/visitors`, {
@@ -68,7 +77,7 @@ export const RegisterVisitor = () => {
                 alert(`Welcome, ${result.name}. Please wait for approval.`);
                 setFormData({
                     name: '', gender: 'Male', mobile: '', email: '', address: '',
-                    company: '', host: '', purpose: 'Meeting', assets: '',
+                    company: '', host: '', purpose: 'Meeting', plant: 'Forging', assets: '', customAsset: '',
                     visitDate: new Date().toISOString().slice(0, 10),
                     visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
                     duration: '1 Hour'
@@ -219,15 +228,38 @@ export const RegisterVisitor = () => {
                                         </select>
                                     </div>
                                     <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Plant to visit</label>
+                                        <select name="plant" value={formData.plant} onChange={handleChange} className="input-field">
+                                            <option>Forging</option>
+                                            <option>NSTP</option>
+                                            <option>SMS</option>
+                                            <option>Bright-Bar</option>
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assets Carried</label>
                                         <select name="assets" value={formData.assets} onChange={handleChange} className="input-field">
                                             <option value="">None</option>
                                             <option>Mobile Only</option>
                                             <option>Laptop Only</option>
+                                            <option>Mobile + Laptop</option>
                                             <option>Tools / Equipment</option>
                                             <option>Other</option>
                                         </select>
                                     </div>
+                                    {formData.assets === 'Other' && (
+                                        <div className="animate-fade-in">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 text-amber-600">Specify Asset Details</label>
+                                            <input
+                                                name="customAsset"
+                                                value={formData.customAsset}
+                                                onChange={handleChange}
+                                                className="input-field border-amber-200 focus:ring-amber-500"
+                                                placeholder="e.g. Industrial Drill, Measurement Tools"
+                                                required={formData.assets === 'Other'}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { User, Lock, ShieldCheck } from 'lucide-react';
 import { API_URL } from '../config';
 
 export const Login = () => {
@@ -22,7 +22,7 @@ export const Login = () => {
 
             if (res.ok) {
                 const data = await res.json();
-                login(data.token, data.username);
+                login(data.token, data.username, data.plant);
                 navigate('/dashboard');
             } else {
                 setError('Access Denied: Invalid Credentials');
