@@ -3,33 +3,28 @@
 To access the VMS from other devices on your network, use these URLs:
 
 **Frontend (Client)**:
-- Local: http://localhost:5173
-- **Network: http://192.168.0.131:5173**
+- Local: https://localhost:5173
+- **Network: https://192.168.0.22:5173**
 
 **Backend (Server)**:
-- Local: http://localhost:3000
-- **Network: http://192.168.0.131:3000**
+- Local: https://localhost:3000
+- **Network: https://192.168.0.22:3000**
 
-### Access from Mobile/Tablet
+### Access from Mobile/Tablet/Scan Devices
 
-1. **Connect to the same WiFi network** as your server (192.168.0.131)
-2. Open browser on mobile device
-3. Navigate to: **http://192.168.0.131:5173**
+1. **Connect to the same WiFi network** as your server (192.168.0.22)
+2. Open browser on device
+3. Navigate to: **https://192.168.0.22:5173**
+4. ⚠️ **Note**: Since we use self-signed certificates, the browser will show a security warning. Click **"Advanced"** and then **"Proceed to 192.168.0.22"**.
 
 ### Important Notes
 
-- The IP address `192.168.0.131` is your current machine's local network IP
-- Other devices must be on the **same WiFi/LAN** network
-- If your IP changes (e.g., after router restart), check the console output for the new IP
-- For webcam access over network, browsers require **HTTPS**. The current setup uses HTTP which works on the same machine only.
+- The IP address `192.168.0.22` is your current machine's local network IP.
+- Other devices must be on the **same WiFi/LAN** network.
+- HTTPS is **enabled**, which allows for full webcam functionality (photo capture) across the local network.
 
-### Webcam Note
+### Webcam Support
 
-⚠️ **Webcam will only work on the host machine (localhost) with HTTP.**
+✅ **Webcam is fully supported over the network thanks to HTTPS.**
 
-For network webcam access, you would need:
-1. HTTPS certificate (self-signed or Let's Encrypt)
-2. Configure Vite with HTTPS
-3. Update browser permissions
-
-For now, use the application on the host machine for photo capture, or set up HTTPS for full network functionality.
+When prompted by the browser, allow the application to access the camera. If the camera doesn't start, ensure you are using the `https://` protocol in the URL.
