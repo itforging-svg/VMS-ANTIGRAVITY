@@ -71,4 +71,4 @@ Access the app via: `https://<your-ip>:3000`
 - **Plant Admins**: `admin_nstp`, `admin_forging`, etc. (Password: `admin123`)
 ---
 ## 📝 License
-Proprietary for **Chandan Steel Ltd**. Developed by Antigravity Systems.
+Proprietary for **Chandan Steel Ltd**. Developed by Atharv Dhapre ( IT Dept ).
