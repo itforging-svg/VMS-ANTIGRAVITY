@@ -121,7 +121,7 @@ export const PrintSlip = () => {
 
                 {/* Signatures */}
                 <div className="absolute bottom-4 left-4 right-4 flex justify-between mt-6 pt-8">
-                    <div className="border-t border-slate-900 w-24 text-center text-[10px] uppercase">Visitor Sign</div>
+                    <div className="border-t border-slate-900 w-24 text-center text-[10px] uppercase">Security Sign</div>
                     <div className="border-t border-slate-900 w-24 text-center text-[10px] uppercase">Auth Sign</div>
                 </div>
             </div>
