@@ -98,7 +98,7 @@ export const RegisterVisitor = () => {
             <header className="bg-[#0e2a63] text-white p-4 sticky top-0 z-50 shadow-xl border-b border-white/10 mb-8">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <img src="https://www.chandansteel.net/images/logo-floated.png" alt="CS Logo" className="h-14 w-auto object-contain bg-white/10 rounded-lg p-1" />
+                        <img src="/logo.png" alt="CS Logo" className="h-14 w-auto object-contain bg-white/10 rounded-lg p-1" />
                         <div>
                             <h1 className="text-2xl font-extrabold text-white tracking-tight">VISITOR REGISTRATION</h1>
                             <p className="text-xs text-slate-300 uppercase tracking-widest font-semibold">Chandan Steel Ltd</p>

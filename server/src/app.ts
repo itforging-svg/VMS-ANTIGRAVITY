@@ -13,7 +13,15 @@ const app = express();
 
 // Security & Middleware
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow images to be loaded
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
+            imgSrc: ["'self'", "data:", "blob:", "https://www.chandansteel.net"],
+            connectSrc: ["'self'", "https:", "wss:", "data:"],
+        },
+    },
 }));
 app.use(cors());
 app.use(json({ limit: '10mb' })); // Allow large photo payloads

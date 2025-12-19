@@ -83,7 +83,7 @@ export const Dashboard = () => {
             <header className="bg-[#0e2a63] text-white p-4 sticky top-0 z-50 shadow-xl border-b border-white/10">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-4">
-                        <img src="https://www.chandansteel.net/images/logo-floated.png" alt="CS Logo" className="h-12 w-auto object-contain bg-white/10 rounded-lg p-1" />
+                        <img src="/logo.png" alt="CS Logo" className="h-12 w-auto object-contain bg-white/10 rounded-lg p-1" />
                         <div>
                             <h1 className="text-lg font-bold tracking-wide">CHANDAN STEEL LTD</h1>
                             <div className="text-xs text-slate-400 uppercase tracking-widest">
