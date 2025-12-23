@@ -30,7 +30,8 @@ export const Dashboard = () => {
 
     const fetchVisitors = async () => {
         try {
-            const res = await fetch(`${API_URL}/api/visitors`, {
+            const today = new Date().toISOString().slice(0, 10);
+            const res = await fetch(`${API_URL}/api/visitors?visitDate=${today}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -112,9 +113,8 @@ export const Dashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg shadow-blue-500/20 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Users size={64} /></div>
-                        <div className="text-blue-100 text-sm font-bold uppercase tracking-wider mb-1">Total Visitors</div>
+                        <div className="text-blue-100 text-sm font-bold uppercase tracking-wider mb-1">Today's Count</div>
                         <div className="text-4xl font-extrabold">{stats.today}</div>
-                        <div className="text-xs text-blue-100 mt-2 bg-white/20 inline-block px-2 py-1 rounded">Today's Count</div>
                     </div>
 
                     <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-6 text-white shadow-lg shadow-amber-500/20 relative overflow-hidden group">

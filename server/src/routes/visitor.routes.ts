@@ -38,9 +38,19 @@ router.get('/', authenticateToken, async (req, res) => {
             paramIndex++;
         }
 
+        // Filter by visitDate
+        const { visitDate } = req.query;
+        if (visitDate) {
+            query += (status ? ' AND' : ' WHERE') + ` visit_date = $${paramIndex}`;
+            params.push(visitDate);
+            paramIndex++;
+        }
+
         // Filter by plant if user is not a super admin
         if ((req as any).user && (req as any).user.plant) {
-            query += (status ? ' AND' : ' WHERE') + ` plant = $${paramIndex}`;
+            // Check if WHERE clause exists (either from status or visitDate)
+            const hasWhere = status || visitDate;
+            query += (hasWhere ? ' AND' : ' WHERE') + ` plant = $${paramIndex}`;
             params.push((req as any).user.plant);
             paramIndex++;
         }
