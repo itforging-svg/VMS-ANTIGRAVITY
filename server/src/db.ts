@@ -50,6 +50,8 @@ export class Database {
                     purpose VARCHAR(255),
                     plant VARCHAR(100),
                     assets VARCHAR(255),
+                    safety_equipment VARCHAR(255),
+                    visitor_card_no VARCHAR(100),
                     photo_path TEXT,
                     status VARCHAR(50) DEFAULT 'PENDING',
                     entry_time TIMESTAMP,
@@ -61,6 +63,14 @@ export class Database {
             // Add plant column if it doesn't exist (for migration)
             await pool.query(`
                 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS plant VARCHAR(100)
+            `);
+
+            // Add new fields for migration
+            await pool.query(`
+                ALTER TABLE visitors ADD COLUMN IF NOT EXISTS safety_equipment VARCHAR(255)
+            `);
+            await pool.query(`
+                ALTER TABLE visitors ADD COLUMN IF NOT EXISTS visitor_card_no VARCHAR(100)
             `);
 
             console.log('Connected to PostgreSQL database');

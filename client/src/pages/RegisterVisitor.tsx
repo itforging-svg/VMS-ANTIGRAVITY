@@ -19,6 +19,8 @@ export const RegisterVisitor = () => {
         plant: 'Seamsless Division',
         assets: '',
         customAsset: '',
+        safetyEquipment: '',
+        visitorCardNo: '',
         visitDate: new Date().toISOString().slice(0, 10),
         visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         duration: '1 Hour'
@@ -78,6 +80,7 @@ export const RegisterVisitor = () => {
                 setFormData({
                     name: '', gender: 'Male', mobile: '', email: '', address: '',
                     company: '', host: '', purpose: 'Meeting', plant: 'Seamsless Division', assets: '', customAsset: '',
+                    safetyEquipment: '', visitorCardNo: '',
                     visitDate: new Date().toISOString().slice(0, 10),
                     visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
                     duration: '1 Hour'
@@ -267,6 +270,26 @@ export const RegisterVisitor = () => {
                                             />
                                         </div>
                                     )}
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Safety Equipment Given</label>
+                                        <input
+                                            name="safetyEquipment"
+                                            value={formData.safetyEquipment}
+                                            onChange={handleChange}
+                                            className="input-field"
+                                            placeholder="e.g. Helmet, Shoes, Goggles"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Visitor Card Number</label>
+                                        <input
+                                            name="visitorCardNo"
+                                            value={formData.visitorCardNo}
+                                            onChange={handleChange}
+                                            className="input-field"
+                                            placeholder="Enter card number"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

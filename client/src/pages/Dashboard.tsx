@@ -17,6 +17,8 @@ interface Visitor {
     photoPath: string;
     mobile: string;
     plant: string;
+    safetyEquipment?: string;
+    visitorCardNo?: string;
 }
 
 export const Dashboard = () => {
@@ -251,6 +253,12 @@ export const Dashboard = () => {
                                                 <div className="text-sm font-medium text-slate-700">{v.company}</div>
                                                 <div className="text-xs text-slate-500">Purpose: {v.purpose}</div>
                                                 <div className="text-xs font-bold text-amber-600 mt-1">Plant: {v.plant || 'N/A'}</div>
+                                                {(v.safetyEquipment || v.visitorCardNo) && (
+                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                        {v.safetyEquipment && <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 rounded border border-blue-100" title="Safety Equipment">PPE: {v.safetyEquipment}</span>}
+                                                        {v.visitorCardNo && <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 rounded border border-slate-200" title="Visitor Card No">Card: {v.visitorCardNo}</span>}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-xs font-bold text-slate-500">IN</div>

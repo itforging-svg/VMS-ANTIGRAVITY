@@ -14,6 +14,8 @@ interface Visitor {
     visitDate: string;
     visitTime: string;
     assets: string;
+    safetyEquipment: string;
+    visitorCardNo: string;
     photoPath: string;
 }
 
@@ -54,13 +56,16 @@ export const PrintSlip = () => {
                 }
             `}</style>
 
-            {/* Unified One-Box Pass - Reduced Size (168mm x 120mm) */}
-            <div style={{ width: '168mm', height: '120mm' }} className="border-2 border-slate-900 bg-white relative overflow-hidden flex flex-col items-center">
-                <div style={{ transform: 'scale(0.8)', transformOrigin: 'top center', width: '100%', padding: '15px 25px' }}>
+            {/* Unified One-Box Pass - Increased Size (195mm x 139mm) */}
+            <div style={{ width: '195mm', height: '139mm' }} className="border-2 border-slate-900 bg-white relative overflow-hidden flex flex-col items-center">
+                <div style={{ transform: 'scale(0.81)', transformOrigin: 'top center', width: '100%', padding: '15px 25px' }}>
                     {/* Header */}
-                    <div className="text-center border-b-2 border-slate-900 pb-1.5 mb-2.5">
-                        <h1 className="text-[14px] font-bold uppercase tracking-wider">Chandan Steel Ltd</h1>
-                        <p className="text-[10px] uppercase">Visitor Pass</p>
+                    <div className="flex items-center justify-between border-b-2 border-slate-900 pb-1.5 mb-2.5 px-4">
+                        <img src="/csl-logo-print.png" alt="CSL Logo" className="h-10 w-auto object-contain" />
+                        <div className="text-center flex-1 mr-8"> {/* mr-8 to offset logo width for centering */}
+                            <h1 className="text-[14px] font-bold uppercase tracking-wider">Chandan Steel Ltd</h1>
+                            <p className="text-[10px] uppercase">Visitor Pass</p>
+                        </div>
                     </div>
 
                     <div className="flex gap-4">
@@ -109,7 +114,14 @@ export const PrintSlip = () => {
                     </div>
 
                     <div className="mt-1.5 text-[10px] border-t border-slate-300 pt-1 text-slate-900">
-                        <span className="font-bold uppercase text-slate-500">Visiting:</span> <span className="font-bold">{visitor.host} ({visitor.plant})</span> | <span className="font-bold uppercase text-slate-500">Assets:</span> <span className="font-bold">{visitor.assets || 'None'}</span>
+                        <div className="flex justify-between">
+                            <span><span className="font-bold uppercase text-slate-500">Visiting:</span> <span className="font-bold">{visitor.host} ({visitor.plant})</span></span>
+                            {visitor.visitorCardNo && <span><span className="font-bold uppercase text-slate-500">Card No:</span> <span className="font-bold">{visitor.visitorCardNo}</span></span>}
+                        </div>
+                        <div className="mt-0.5">
+                            <span className="font-bold uppercase text-slate-500">Assets:</span> <span className="font-bold">{visitor.assets || 'None'}</span>
+                            {visitor.safetyEquipment && <span className="ml-4"><span className="font-bold uppercase text-slate-500">Safety Equp:</span> <span className="font-bold">{visitor.safetyEquipment}</span></span>}
+                        </div>
                     </div>
 
                     {/* EHS guidelines */}
@@ -145,9 +157,8 @@ export const PrintSlip = () => {
                     </div>
 
                     {/* Signatures */}
-                    <div className="flex justify-between items-end mt-2.5 px-1">
+                    <div className="flex justify-between items-end mt-12 px-1">
                         <div className="border-t border-slate-900 w-24 text-center text-[7px] uppercase pt-0.5 text-slate-600">Security</div>
-                        <div className="border-t border-slate-900 w-32 text-center text-[7px] uppercase pt-0.5 text-slate-600">Signature of Visitor</div>
                         <div className="border-t border-slate-900 w-24 text-center text-[7px] uppercase pt-0.5 text-slate-600">Authorized</div>
                     </div>
                 </div>

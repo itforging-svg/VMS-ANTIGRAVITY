@@ -71,6 +71,8 @@ router.get('/', authenticateToken, async (req, res) => {
             plant: v.plant,
             assets: v.assets,
             photoPath: v.photo_path,
+            safetyEquipment: v.safety_equipment,
+            visitorCardNo: v.visitor_card_no,
             status: v.status,
             entryTime: v.entry_time,
             exitTime: v.exit_time,
@@ -102,6 +104,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
             visitTime: (visitor as any).visit_time,
             plant: (visitor as any).plant,
             assets: (visitor as any).assets,
+            safetyEquipment: (visitor as any).safety_equipment,
+            visitorCardNo: (visitor as any).visitor_card_no,
             photoPath: (visitor as any).photo_path
         };
         res.json(mapped);
@@ -117,7 +121,8 @@ router.post('/', upload.single('photo'), async (req, res) => {
         const {
             name, gender, mobile, email, address,
             visitDate, visitTime, duration,
-            company, host, purpose, plant, assets
+            company, host, purpose, plant, assets,
+            safetyEquipment, visitorCardNo
         } = req.body;
         // No required field validation - all fields optional
 
@@ -147,14 +152,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
             INSERT INTO visitors (
                 batch_no, name, gender, mobile, email, address,
                 visit_date, visit_time, duration, company, host, purpose, plant, assets,
+                safety_equipment, visitor_card_no,
                 photo_path, status, entry_time
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'PENDING', $16)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'PENDING', $18)
             RETURNING *
         `;
 
         const params = [
             batchNo, name, gender, mobile, email || '', address || '',
             visitDate, visitTime, duration, company, host, purpose, plant, assets,
+            safetyEquipment || '', visitorCardNo || '',
             photoPath, localTimeStr
         ];
 

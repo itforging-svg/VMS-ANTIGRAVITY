@@ -9,5 +9,12 @@ export default defineConfig({
     host: '0.0.0.0', // Expose on network
     port: 5173,
     https: true,
+    proxy: {
+      '/api': {
+        target: 'https://localhost:3000',
+        changeOrigin: true,
+        secure: false, // For self-signed certs
+      }
+    }
   }
 })
