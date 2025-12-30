@@ -145,14 +145,25 @@ router.post('/', upload.single('photo'), async (req, res) => {
         const year = now.getFullYear();
         const dateStr = `${day}${month}${year}`;
 
-        // Get count of visitors registered today to generate sequential number
-        const todayStart = `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${day}`;
-        const todayCount = await db.all(
-            `SELECT COUNT(*) as count FROM visitors WHERE visit_date = $1`,
-            [todayStart]
+        // Get last batch number for today to generate sequential number
+        const batchPrefix = `VMS-${dateStr}`;
+        const lastVisitor = await db.get(
+            `SELECT batch_no FROM visitors WHERE batch_no LIKE $1 ORDER BY id DESC LIMIT 1`,
+            [`${batchPrefix}-%`]
         );
-        const sequentialNum = String((todayCount[0] as any).count + 1).padStart(4, '0');
-        const batchNo = `VMS-${dateStr}-${sequentialNum}`;
+
+        let sequentialNum = '0001';
+        if (lastVisitor && (lastVisitor as any).batch_no) {
+            const lastBatchNo = (lastVisitor as any).batch_no;
+            const parts = lastBatchNo.split('-');
+            const lastSeq = parseInt(parts[parts.length - 1]);
+
+            if (!isNaN(lastSeq)) {
+                sequentialNum = String(lastSeq + 1).padStart(4, '0');
+            }
+        }
+
+        const batchNo = `${batchPrefix}-${sequentialNum}`;
 
         const offset = now.getTimezoneOffset() * 60000;
         const local = new Date(now.getTime() - offset);
@@ -188,7 +199,11 @@ router.post('/', upload.single('photo'), async (req, res) => {
         res.status(201).json(mapped);
     } catch (error) {
         console.error('Error creating visitor:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+        res.status(500).json({ message: 'Internal Server Error', error: String(error) });
     }
 });
 
