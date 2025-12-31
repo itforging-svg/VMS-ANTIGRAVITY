@@ -51,13 +51,13 @@ export const PrintSlip = () => {
         <div className="flex justify-center pt-5 bg-white min-h-screen">
             <style>{`
                 @media print {
-                    @page { size: A4; margin: 0; }
+                    @page { size: A5; margin: 0; orientation: landscape; }
                     body { -webkit-print-color-adjust: exact; }
                 }
             `}</style>
 
             {/* Unified One-Box Pass - Increased Size (195mm x 139mm) */}
-            <div style={{ width: '195mm', height: '139mm' }} className="border-2 border-slate-900 bg-white relative overflow-hidden flex flex-col items-center">
+            <div style={{ width: '139mm', height: '195mm' }} className="border-2 border-slate-900 bg-white relative overflow-hidden flex flex-col items-center">
                 <div style={{ transform: 'scale(0.81)', transformOrigin: 'top center', width: '100%', padding: '15px 25px' }}>
                     {/* Header */}
                     <div className="flex items-center justify-between border-b-2 border-slate-900 pb-1.5 mb-2.5 px-4">

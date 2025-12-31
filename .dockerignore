@@ -1,0 +1,12 @@
+node_modules
+dist
+.cert
+vms.db
+.git
+.gitignore
+client/node_modules
+client/dist
+server/node_modules
+server/dist
+server/uploads/*
+!server/uploads/.gitkeep
