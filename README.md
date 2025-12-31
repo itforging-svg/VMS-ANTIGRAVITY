@@ -77,6 +77,8 @@ Access the app via: `https://<your-ip>:3000`
   - **Wire Plant**: `admin_wire`
   - **Main Plant 2 ( SMS 2 )**: `admin_main2`
   - **40"Inch Mill**: `admin_40inch`
+
+  docker run -d -p 3000:3000 itforging/vms:latest
 ---
 ## 📝 License
 Proprietary for **Chandan Steel Ltd**. Developed by Atharv Dhapre ( IT Dept ).
