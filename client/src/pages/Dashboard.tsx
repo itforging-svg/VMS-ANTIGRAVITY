@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown, Pen } from 'lucide-react';
+import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown, Pen, Trash2 } from 'lucide-react';
 import { format, subDays, subMonths, subYears } from 'date-fns';
 import { API_URL } from '../config';
 import { EditVisitorModal } from '../components/EditVisitorModal';
@@ -24,7 +24,7 @@ interface Visitor {
 }
 
 export const Dashboard = () => {
-    const { token, logout } = useAuth();
+    const { token, logout, plant } = useAuth();
     const [visitors, setVisitors] = useState<Visitor[]>([]);
     const [showReportMenu, setShowReportMenu] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -104,6 +104,23 @@ export const Dashboard = () => {
             }
         } catch (error) {
             alert('Failed to update visitor');
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!window.confirm('Are you sure you want to permanently delete this record?')) return;
+        try {
+            const res = await fetch(`${API_URL}/api/visitors/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                fetchVisitors();
+            } else {
+                throw new Error('Deletion failed');
+            }
+        } catch (error) {
+            alert('Failed to delete visitor');
         }
     };
 
@@ -353,6 +370,11 @@ export const Dashboard = () => {
                                                     <button onClick={() => setEditingVisitor(v)} className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 hover:scale-110 transition-all shadow-sm" title="Edit Details">
                                                         <Pen size={18} />
                                                     </button>
+                                                    {!plant && (
+                                                        <button onClick={() => handleDelete(v.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all shadow-sm" title="Delete Entry">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
                                                     {/* Allow reprint even after exit */}
                                                     {(v.status === 'EXITED' || v.status === 'APPROVED') && v.exitTime && (
                                                         <button onClick={() => handlePrint(v.id)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all shadow-sm" title="Reprint Slip">

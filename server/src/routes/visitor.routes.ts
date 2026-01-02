@@ -336,4 +336,24 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// DELETE Visitor (Super Admin Only)
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Only super admin (plant is null) can delete
+        if ((req as any).user && (req as any).user.plant) {
+            return res.status(403).json({ message: 'Access denied: Only Super Admin can delete records' });
+        }
+
+        const result = await db.run('DELETE FROM visitors WHERE id = $1', [id]);
+
+        // In sqlite3-promisify, we check changes or just assume success if no error
+        res.json({ message: 'Visitor deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting visitor:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 export default router;
