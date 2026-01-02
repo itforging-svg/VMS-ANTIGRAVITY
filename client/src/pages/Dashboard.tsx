@@ -34,7 +34,16 @@ export const Dashboard = () => {
     const fetchVisitors = async () => {
         try {
             const today = new Date().toISOString().slice(0, 10);
-            const res = await fetch(`${API_URL}/api/visitors?visitDate=${today}`, {
+            let url = `${API_URL}/api/visitors?`;
+
+            if (filter.length > 2) {
+                // Trigger server-side search if filter is typed
+                url += `search=${filter}`;
+            } else {
+                url += `visitDate=${today}`;
+            }
+
+            const res = await fetch(url, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -46,10 +55,19 @@ export const Dashboard = () => {
     };
 
     useEffect(() => {
-        fetchVisitors();
-        const interval = setInterval(fetchVisitors, 10000); // Poll every 10s
-        return () => clearInterval(interval);
-    }, [token]);
+        const timer = setTimeout(() => {
+            fetchVisitors();
+        }, 500); // Debounce search
+        return () => clearTimeout(timer);
+    }, [filter, token]);
+
+    // Polling only if not searching
+    useEffect(() => {
+        if (!filter) {
+            const interval = setInterval(fetchVisitors, 10000);
+            return () => clearInterval(interval);
+        }
+    }, [filter, token]);
 
     const updateStatus = async (id: number, status: string) => {
         try {
@@ -99,11 +117,8 @@ export const Dashboard = () => {
         active: visitors.filter(v => v.status === 'APPROVED' && !v.exitTime).length
     };
 
-    const filteredVisitors = visitors.filter(v =>
-        v.name.toLowerCase().includes(filter.toLowerCase()) ||
-        v.company.toLowerCase().includes(filter.toLowerCase()) ||
-        v.batchNo.toLowerCase().includes(filter.toLowerCase())
-    );
+    // Filter logic moved to backend, so we render visitors directly
+    const filteredVisitors = visitors;
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans">
@@ -236,7 +251,7 @@ export const Dashboard = () => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search visitor..."
+                                placeholder="Search by name, mobile, etc..."
                                 className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}

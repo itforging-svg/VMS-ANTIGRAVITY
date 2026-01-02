@@ -37,14 +37,15 @@ router.get('/search', async (req, res) => {
 
         if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
 
-        // Return only auto-fillable fields
+        // Return only auto-fillable fields including photo
         res.json({
             name: (visitor as any).name,
             gender: (visitor as any).gender,
             email: (visitor as any).email,
             address: (visitor as any).address,
             company: (visitor as any).company,
-            mobile: (visitor as any).mobile
+            mobile: (visitor as any).mobile,
+            photoPath: (visitor as any).photo_path // Include photo path
         });
     } catch (error) {
         console.error('Error searching visitor:', error);
@@ -55,29 +56,38 @@ router.get('/search', async (req, res) => {
 // GET All Visitors
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const { status, limit } = req.query;
+        const { status, limit, search } = req.query;
         let query = 'SELECT * FROM visitors';
         const params: any[] = [];
         let paramIndex = 1;
 
-        if (status) {
-            query += ` WHERE status = $${paramIndex}`;
-            params.push(status);
+        if (search) {
+            // Global Search Mode
+            query += ` WHERE (name LIKE $${paramIndex} OR mobile LIKE $${paramIndex} OR email LIKE $${paramIndex} OR company LIKE $${paramIndex})`;
+            params.push(`%${search}%`);
             paramIndex++;
+        } else {
+            // Default Daily View Mode
+            const { visitDate } = req.query;
+            if (visitDate) {
+                query += ` WHERE visit_date = $${paramIndex}`;
+                params.push(visitDate);
+                paramIndex++;
+            }
         }
 
-        // Filter by visitDate
-        const { visitDate } = req.query;
-        if (visitDate) {
-            query += (status ? ' AND' : ' WHERE') + ` visit_date = $${paramIndex}`;
-            params.push(visitDate);
+        if (status) {
+            // Append status filter carefully
+            const hasWhere = query.includes('WHERE');
+            query += (hasWhere ? ' AND' : ' WHERE') + ` status = $${paramIndex}`;
+            params.push(status);
             paramIndex++;
         }
 
         // Filter by plant if user is not a super admin
         if ((req as any).user && (req as any).user.plant) {
-            // Check if WHERE clause exists (either from status or visitDate)
-            const hasWhere = status || visitDate;
+            // Check if WHERE clause exists
+            const hasWhere = query.includes('WHERE');
             query += (hasWhere ? ' AND' : ' WHERE') + ` plant = $${paramIndex}`;
             params.push((req as any).user.plant);
             paramIndex++;

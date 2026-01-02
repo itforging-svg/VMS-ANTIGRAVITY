@@ -116,6 +116,13 @@ export const RegisterVisitor = () => {
                     address: data.address || '',
                     company: data.company || ''
                 }));
+
+                // Auto-fill photo if available
+                if (data.photoPath) {
+                    // Append full URL
+                    setImgSrc(`${API_URL}${data.photoPath}`);
+                }
+
                 alert('Welcome back! Details found and autofilled.');
             } else {
                 alert('No previous visitor found with this mobile number.');
