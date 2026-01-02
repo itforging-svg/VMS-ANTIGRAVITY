@@ -29,18 +29,18 @@ export const Dashboard = () => {
     const [showReportMenu, setShowReportMenu] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
     const [editingVisitor, setEditingVisitor] = useState<Visitor | null>(null);
 
     const fetchVisitors = async () => {
         try {
-            const today = new Date().toISOString().slice(0, 10);
             let url = `${API_URL}/api/visitors?`;
 
             if (filter.length > 2) {
                 // Trigger server-side search if filter is typed
                 url += `search=${filter}`;
             } else {
-                url += `visitDate=${today}`;
+                url += `visitDate=${selectedDate}`;
             }
 
             const res = await fetch(url, {
@@ -59,7 +59,7 @@ export const Dashboard = () => {
             fetchVisitors();
         }, 500); // Debounce search
         return () => clearTimeout(timer);
-    }, [filter, token]);
+    }, [filter, selectedDate, token]);
 
     // Polling only if not searching
     useEffect(() => {
@@ -67,7 +67,7 @@ export const Dashboard = () => {
             const interval = setInterval(fetchVisitors, 10000);
             return () => clearInterval(interval);
         }
-    }, [filter, token]);
+    }, [filter, selectedDate, token]);
 
     const updateStatus = async (id: number, status: string) => {
         try {
@@ -246,7 +246,15 @@ export const Dashboard = () => {
                 {/* Main Content */}
                 <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <h2 className="text-xl font-bold text-slate-800">Visitor Logs</h2>
+                        <div className="flex items-center gap-4 w-full md:w-auto">
+                            <h2 className="text-xl font-bold text-slate-800">Visitor Logs</h2>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-amber-500"
+                            />
+                        </div>
                         <div className="relative w-full md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
