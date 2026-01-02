@@ -24,6 +24,34 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// GET Search Visitor by Mobile (Public for Kiosk)
+router.get('/search', async (req, res) => {
+    try {
+        const { mobile } = req.query;
+        if (!mobile) return res.status(400).json({ message: 'Mobile number required' });
+
+        const visitor = await db.get(
+            'SELECT * FROM visitors WHERE mobile = $1 ORDER BY id DESC LIMIT 1',
+            [mobile]
+        );
+
+        if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
+
+        // Return only auto-fillable fields
+        res.json({
+            name: (visitor as any).name,
+            gender: (visitor as any).gender,
+            email: (visitor as any).email,
+            address: (visitor as any).address,
+            company: (visitor as any).company,
+            mobile: (visitor as any).mobile
+        });
+    } catch (error) {
+        console.error('Error searching visitor:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 // GET All Visitors
 router.get('/', authenticateToken, async (req, res) => {
     try {
@@ -257,6 +285,43 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Error updating status:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+// UPDATE Visitor Details
+router.put('/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            name, company, host, purpose, assets,
+            safetyEquipment, visitorCardNo, mobile
+        } = req.body;
+
+        // Check if visitor exists and belongs to the admin's plant
+        const visitor = await db.get('SELECT * FROM visitors WHERE id = $1', [id]);
+        if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
+
+        if ((req as any).user && (req as any).user.plant && (visitor as any).plant !== (req as any).user.plant) {
+            return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+        }
+
+        const sql = `
+            UPDATE visitors 
+            SET name = $1, company = $2, host = $3, purpose = $4, 
+                assets = $5, safety_equipment = $6, visitor_card_no = $7, mobile = $8
+            WHERE id = $9
+        `;
+
+        await db.run(sql, [
+            name, company, host, purpose, assets,
+            safetyEquipment, visitorCardNo, mobile, id
+        ]);
+
+        res.json({ message: 'Visitor details updated successfully' });
+
+    } catch (error) {
+        console.error('Error updating visitor:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 });

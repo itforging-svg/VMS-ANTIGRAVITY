@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
-import { Camera, RefreshCw, Save, User, Building, MapPin, Briefcase, ChevronRight } from 'lucide-react';
+import { Camera, RefreshCw, Save, User, Building, MapPin, Briefcase, ChevronRight, Search, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 
@@ -26,6 +26,7 @@ export const RegisterVisitor = () => {
         duration: '1 Hour'
     });
     const [submitting, setSubmitting] = useState(false);
+    const [searching, setSearching] = useState(false);
     const navigate = useNavigate();
 
     const capture = useCallback(() => {
@@ -93,6 +94,37 @@ export const RegisterVisitor = () => {
             alert('Error submitting form');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleSearch = async () => {
+        if (!formData.mobile || formData.mobile.length < 10) {
+            alert('Please enter a valid mobile number first');
+            return;
+        }
+
+        setSearching(true);
+        try {
+            const res = await fetch(`${API_URL}/api/visitors/search?mobile=${formData.mobile}`);
+            if (res.ok) {
+                const data = await res.json();
+                setFormData(prev => ({
+                    ...prev,
+                    name: data.name || '',
+                    gender: data.gender || 'Male',
+                    email: data.email || '',
+                    address: data.address || '',
+                    company: data.company || ''
+                }));
+                alert('Welcome back! Details found and autofilled.');
+            } else {
+                alert('No previous visitor found with this mobile number.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Search failed');
+        } finally {
+            setSearching(false);
         }
     };
 
@@ -194,7 +226,18 @@ export const RegisterVisitor = () => {
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mobile</label>
-                                            <input name="mobile" value={formData.mobile} onChange={handleChange} className="input-field" placeholder="9876543210" />
+                                            <div className="relative">
+                                                <input name="mobile" value={formData.mobile} onChange={handleChange} className="input-field pr-10" placeholder="9876543210" />
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSearch}
+                                                    disabled={searching}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                                                    title="Search previous visitor"
+                                                >
+                                                    {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="md:col-span-2">

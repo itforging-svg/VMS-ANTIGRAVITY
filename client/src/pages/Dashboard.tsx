@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown } from 'lucide-react';
+import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown, Pen } from 'lucide-react';
 import { format, subDays, subMonths, subYears } from 'date-fns';
 import { API_URL } from '../config';
+import { EditVisitorModal } from '../components/EditVisitorModal';
 
 interface Visitor {
     id: number;
     batchNo: string;
     name: string;
     company: string;
+    host: string;
     visitTime: string;
     purpose: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXITED';
@@ -27,6 +29,7 @@ export const Dashboard = () => {
     const [showReportMenu, setShowReportMenu] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('');
+    const [editingVisitor, setEditingVisitor] = useState<Visitor | null>(null);
 
     const fetchVisitors = async () => {
         try {
@@ -61,6 +64,28 @@ export const Dashboard = () => {
             fetchVisitors();
         } catch (error) {
             alert('Action failed');
+        }
+    };
+
+    const handleUpdateVisitor = async (updatedData: Partial<Visitor>) => {
+        if (!editingVisitor) return;
+        try {
+            const res = await fetch(`${API_URL}/api/visitors/${editingVisitor.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(updatedData)
+            });
+            if (res.ok) {
+                fetchVisitors();
+                setEditingVisitor(null);
+            } else {
+                throw new Error('Update failed');
+            }
+        } catch (error) {
+            alert('Failed to update visitor');
         }
     };
 
@@ -302,6 +327,9 @@ export const Dashboard = () => {
                                                             </button>
                                                         </>
                                                     )}
+                                                    <button onClick={() => setEditingVisitor(v)} className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 hover:scale-110 transition-all shadow-sm" title="Edit Details">
+                                                        <Pen size={18} />
+                                                    </button>
                                                     {/* Allow reprint even after exit */}
                                                     {(v.status === 'EXITED' || v.status === 'APPROVED') && v.exitTime && (
                                                         <button onClick={() => handlePrint(v.id)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all shadow-sm" title="Reprint Slip">
@@ -328,6 +356,13 @@ export const Dashboard = () => {
                     )}
                 </div>
             </div>
+            {editingVisitor && (
+                <EditVisitorModal
+                    visitor={editingVisitor}
+                    onClose={() => setEditingVisitor(null)}
+                    onSave={handleUpdateVisitor}
+                />
+            )}
         </div>
     );
 };
