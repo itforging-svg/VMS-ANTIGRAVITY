@@ -52,6 +52,8 @@ export class Database {
                     assets VARCHAR(255),
                     safety_equipment VARCHAR(255),
                     visitor_card_no VARCHAR(100),
+                    aadhar_no VARCHAR(20),
+                    is_blacklisted BOOLEAN DEFAULT FALSE,
                     photo_path TEXT,
                     status VARCHAR(50) DEFAULT 'PENDING',
                     entry_time TIMESTAMP,
@@ -71,6 +73,12 @@ export class Database {
             `);
             await pool.query(`
                 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS visitor_card_no VARCHAR(100)
+            `);
+            await pool.query(`
+                ALTER TABLE visitors ADD COLUMN IF NOT EXISTS aadhar_no VARCHAR(20)
+            `);
+            await pool.query(`
+                ALTER TABLE visitors ADD COLUMN IF NOT EXISTS is_blacklisted BOOLEAN DEFAULT FALSE
             `);
 
             console.log('Connected to PostgreSQL database');

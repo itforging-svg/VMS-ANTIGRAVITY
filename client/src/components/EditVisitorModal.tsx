@@ -11,6 +11,7 @@ interface Visitor {
     safetyEquipment?: string;
     visitorCardNo?: string;
     mobile: string;
+    aadharNo?: string;
 }
 
 interface EditVisitorModalProps {
@@ -28,7 +29,8 @@ export const EditVisitorModal = ({ visitor, onClose, onSave }: EditVisitorModalP
         assets: visitor.assets || '',
         safetyEquipment: visitor.safetyEquipment || '',
         visitorCardNo: visitor.visitorCardNo || '',
-        mobile: visitor.mobile
+        mobile: visitor.mobile,
+        aadharNo: (visitor as any).aadharNo || ''
     });
     const [loading, setLoading] = useState(false);
 
@@ -140,6 +142,16 @@ export const EditVisitorModal = ({ visitor, onClose, onSave }: EditVisitorModalP
                                 value={formData.visitorCardNo}
                                 onChange={e => setFormData({ ...formData, visitorCardNo: e.target.value })}
                                 className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <div className="col-span-2">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Aadhar Card Number</label>
+                            <input
+                                type="text"
+                                value={formData.aadharNo}
+                                onChange={e => setFormData({ ...formData, aadharNo: e.target.value })}
+                                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none"
+                                placeholder="12-digit Aadhar Number"
                             />
                         </div>
                     </div>

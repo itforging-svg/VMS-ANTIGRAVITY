@@ -24,18 +24,31 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// GET Search Visitor by Mobile (Public for Kiosk)
+// GET Search Visitor by Mobile or Aadhar (Public for Kiosk)
 router.get('/search', async (req, res) => {
     try {
-        const { mobile } = req.query;
-        if (!mobile) return res.status(400).json({ message: 'Mobile number required' });
+        const { mobile, aadhar } = req.query;
+        if (!mobile && !aadhar) return res.status(400).json({ message: 'Mobile or Aadhar number required' });
 
-        const visitor = await db.get(
-            'SELECT * FROM visitors WHERE mobile = $1 ORDER BY id DESC LIMIT 1',
-            [mobile]
-        );
+        let visitor;
+        if (mobile) {
+            visitor = await db.get(
+                'SELECT * FROM visitors WHERE mobile = $1 ORDER BY id DESC LIMIT 1',
+                [mobile]
+            );
+        } else if (aadhar) {
+            visitor = await db.get(
+                'SELECT * FROM visitors WHERE aadhar_no = $1 ORDER BY id DESC LIMIT 1',
+                [aadhar]
+            );
+        }
 
         if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
+
+        // Check if blacklisted
+        if ((visitor as any).is_blacklisted) {
+            return res.status(403).json({ message: 'This visitor is blacklisted and cannot register.', blacklisted: true });
+        }
 
         // Return only auto-fillable fields including photo
         res.json({
@@ -45,6 +58,7 @@ router.get('/search', async (req, res) => {
             address: (visitor as any).address,
             company: (visitor as any).company,
             mobile: (visitor as any).mobile,
+            aadharNo: (visitor as any).aadhar_no,
             photoPath: (visitor as any).photo_path // Include photo path
         });
     } catch (error) {
@@ -63,7 +77,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
         if (search) {
             // Global Search Mode
-            query += ` WHERE (name LIKE $${paramIndex} OR mobile LIKE $${paramIndex} OR email LIKE $${paramIndex} OR company LIKE $${paramIndex})`;
+            query += ` WHERE (name LIKE $${paramIndex} OR mobile LIKE $${paramIndex} OR email LIKE $${paramIndex} OR company LIKE $${paramIndex} OR aadhar_no LIKE $${paramIndex})`;
             params.push(`%${search}%`);
             paramIndex++;
         } else {
@@ -121,6 +135,8 @@ router.get('/', authenticateToken, async (req, res) => {
             photoPath: v.photo_path,
             safetyEquipment: v.safety_equipment,
             visitorCardNo: v.visitor_card_no,
+            aadharNo: v.aadhar_no,
+            isBlacklisted: v.is_blacklisted,
             status: v.status,
             entryTime: v.entry_time,
             exitTime: v.exit_time,
@@ -154,6 +170,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
             assets: (visitor as any).assets,
             safetyEquipment: (visitor as any).safety_equipment,
             visitorCardNo: (visitor as any).visitor_card_no,
+            aadharNo: (visitor as any).aadhar_no,
+            isBlacklisted: (visitor as any).is_blacklisted,
             photoPath: (visitor as any).photo_path
         };
         res.json(mapped);
@@ -170,9 +188,18 @@ router.post('/', upload.single('photo'), async (req, res) => {
             name, gender, mobile, email, address,
             visitDate, visitTime, duration,
             company, host, purpose, plant, assets,
-            safetyEquipment, visitorCardNo
+            safetyEquipment, visitorCardNo, aadharNo
         } = req.body;
-        // No required field validation - all fields optional
+
+        // Check if blacklisted by mobile or aadhar
+        const blacklisted = await db.get(
+            'SELECT * FROM visitors WHERE (mobile = $1 OR (aadhar_no = $2 AND aadhar_no IS NOT NULL AND aadhar_no != \'\')) AND is_blacklisted = TRUE LIMIT 1',
+            [mobile, aadharNo]
+        );
+
+        if (blacklisted) {
+            return res.status(403).json({ message: 'Your registration is rejected as you are blacklisted.' });
+        }
 
         const photoPath = req.file ? `/uploads/${req.file.filename}` : '';
 
@@ -211,16 +238,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
             INSERT INTO visitors (
                 batch_no, name, gender, mobile, email, address,
                 visit_date, visit_time, duration, company, host, purpose, plant, assets,
-                safety_equipment, visitor_card_no,
+                safety_equipment, visitor_card_no, aadhar_no,
                 photo_path, status, entry_time
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'PENDING', $18)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'PENDING', $19)
             RETURNING *
         `;
 
         const params = [
             batchNo, name, gender, mobile, email || '', address || '',
             visitDate, visitTime, duration, company, host, purpose, plant, assets,
-            safetyEquipment || '', visitorCardNo || '',
+            safetyEquipment || '', visitorCardNo || '', aadharNo || '',
             photoPath, localTimeStr
         ];
 
@@ -299,13 +326,32 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
     }
 });
 
+// BLACKLIST Visitor (Super Admin Only)
+router.patch('/:id/blacklist', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isBlacklisted } = req.body;
+
+        // Only super admin can blacklist (plant is null for super admin)
+        if ((req as any).user && (req as any).user.plant) {
+            return res.status(403).json({ message: 'Access denied: Only Super Admin can blacklist/unblacklist' });
+        }
+
+        await db.run('UPDATE visitors SET is_blacklisted = $1 WHERE id = $2', [isBlacklisted, id]);
+        res.json({ message: isBlacklisted ? 'Visitor blacklisted' : 'Visitor unblacklisted' });
+    } catch (error) {
+        console.error('Error blacklisting visitor:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 // UPDATE Visitor Details
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const {
             name, company, host, purpose, assets,
-            safetyEquipment, visitorCardNo, mobile
+            safetyEquipment, visitorCardNo, mobile, aadharNo
         } = req.body;
 
         // Check if visitor exists and belongs to the admin's plant
@@ -319,13 +365,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
         const sql = `
             UPDATE visitors 
             SET name = $1, company = $2, host = $3, purpose = $4, 
-                assets = $5, safety_equipment = $6, visitor_card_no = $7, mobile = $8
-            WHERE id = $9
+                assets = $5, safety_equipment = $6, visitor_card_no = $7, mobile = $8, aadhar_no = $9
+            WHERE id = $10
         `;
 
         await db.run(sql, [
             name, company, host, purpose, assets,
-            safetyEquipment, visitorCardNo, mobile, id
+            safetyEquipment, visitorCardNo, mobile, aadharNo, id
         ]);
 
         res.json({ message: 'Visitor details updated successfully' });

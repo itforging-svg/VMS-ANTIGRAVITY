@@ -21,6 +21,8 @@ interface Visitor {
     plant: string;
     safetyEquipment?: string;
     visitorCardNo?: string;
+    aadharNo?: string;
+    isBlacklisted: boolean;
 }
 
 export const Dashboard = () => {
@@ -121,6 +123,26 @@ export const Dashboard = () => {
             }
         } catch (error) {
             alert('Failed to delete visitor');
+        }
+    };
+    const handleBlacklist = async (id: number, isBlacklisted: boolean) => {
+        if (!window.confirm(`Are you sure you want to ${isBlacklisted ? 'blacklist' : 'unblacklist'} this visitor?`)) return;
+        try {
+            const res = await fetch(`${API_URL}/api/visitors/${id}/blacklist`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ isBlacklisted })
+            });
+            if (res.ok) {
+                fetchVisitors();
+            } else {
+                throw new Error('Blacklist action failed');
+            }
+        } catch (error) {
+            alert('Failed to update blacklist status');
         }
     };
 
@@ -293,6 +315,7 @@ export const Dashboard = () => {
                                     <tr>
                                         <th className="p-4 pl-6">Batch / Photo</th>
                                         <th className="p-4">Visitor Details</th>
+                                        <th className="p-4">Aadhar No</th>
                                         <th className="p-4">Context</th>
                                         <th className="p-4">Timing</th>
                                         <th className="p-4">Status</th>
@@ -313,6 +336,10 @@ export const Dashboard = () => {
                                             <td className="p-4">
                                                 <div className="font-bold text-slate-900">{v.name}</div>
                                                 <div className="text-xs text-slate-500 flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>{v.mobile}</div>
+                                                {v.isBlacklisted && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 rounded border border-red-200 font-bold mt-1 inline-block">BLACKLISTED</span>}
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="text-sm font-mono text-slate-600">{v.aadharNo || 'N/A'}</div>
                                             </td>
                                             <td className="p-4">
                                                 <div className="text-sm font-medium text-slate-700">{v.company}</div>
@@ -371,9 +398,18 @@ export const Dashboard = () => {
                                                         <Pen size={18} />
                                                     </button>
                                                     {!plant && (
-                                                        <button onClick={() => handleDelete(v.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all shadow-sm" title="Delete Entry">
-                                                            <Trash2 size={18} />
-                                                        </button>
+                                                        <>
+                                                            <button onClick={() => handleDelete(v.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all shadow-sm" title="Delete Entry">
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleBlacklist(v.id, !v.isBlacklisted)}
+                                                                className={`w-8 h-8 rounded-lg flex items-center justify-center hover:scale-110 transition-all shadow-sm ${v.isBlacklisted ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                                                                title={v.isBlacklisted ? 'Unblacklist Visitor' : 'Blacklist Visitor'}
+                                                            >
+                                                                <XCircle size={18} />
+                                                            </button>
+                                                        </>
                                                     )}
                                                     {/* Allow reprint even after exit */}
                                                     {(v.status === 'EXITED' || v.status === 'APPROVED') && v.exitTime && (
@@ -387,7 +423,7 @@ export const Dashboard = () => {
                                     ))}
                                     {filteredVisitors.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="p-12 text-center text-slate-400">
+                                            <td colSpan={7} className="p-12 text-center text-slate-400">
                                                 <div className="flex flex-col items-center gap-2">
                                                     <FileText size={48} className="opacity-20" />
                                                     <span>No records found</span>

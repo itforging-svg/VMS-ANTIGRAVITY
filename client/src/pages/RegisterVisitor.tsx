@@ -21,6 +21,7 @@ export const RegisterVisitor = () => {
         customAsset: '',
         safetyEquipment: '',
         visitorCardNo: '',
+        aadharNo: '',
         visitDate: new Date().toISOString().slice(0, 10),
         visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
         duration: '1 Hour'
@@ -44,6 +45,15 @@ export const RegisterVisitor = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Mandatory Field Validation
+        const mandatoryFields = ['name', 'gender', 'mobile', 'address', 'company', 'host', 'aadharNo'];
+        const missingFields = mandatoryFields.filter(field => !formData[field as keyof typeof formData]);
+
+        if (missingFields.length > 0) {
+            alert(`Please fill the following mandatory fields: ${missingFields.join(', ')}`);
+            return;
+        }
 
         setSubmitting(true);
 
@@ -81,7 +91,7 @@ export const RegisterVisitor = () => {
                 setFormData({
                     name: '', gender: 'Male', mobile: '', email: '', address: '',
                     company: '', host: '', purpose: 'Meeting', plant: 'Seamsless Division', assets: '', customAsset: '',
-                    safetyEquipment: '', visitorCardNo: '',
+                    safetyEquipment: '', visitorCardNo: '', aadharNo: '',
                     visitDate: new Date().toISOString().slice(0, 10),
                     visitTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
                     duration: '1 Hour'
@@ -114,7 +124,8 @@ export const RegisterVisitor = () => {
                     gender: data.gender || 'Male',
                     email: data.email || '',
                     address: data.address || '',
-                    company: data.company || ''
+                    company: data.company || '',
+                    aadharNo: data.aadharNo || ''
                 }));
 
                 // Auto-fill photo if available
@@ -126,6 +137,47 @@ export const RegisterVisitor = () => {
                 alert('Welcome back! Details found and autofilled.');
             } else {
                 alert('No previous visitor found with this mobile number.');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Search failed');
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleAadharSearch = async () => {
+        if (!formData.aadharNo || formData.aadharNo.length < 12) {
+            alert('Please enter a valid 12-digit Aadhar number first');
+            return;
+        }
+
+        setSearching(true);
+        try {
+            const res = await fetch(`${API_URL}/api/visitors/search?aadhar=${formData.aadharNo}`);
+            if (res.ok) {
+                const data = await res.json();
+                setFormData(prev => ({
+                    ...prev,
+                    name: data.name || '',
+                    gender: data.gender || 'Male',
+                    email: data.email || '',
+                    address: data.address || '',
+                    company: data.company || '',
+                    mobile: data.mobile || ''
+                }));
+
+                // Auto-fill photo if available
+                if (data.photoPath) {
+                    setImgSrc(`${API_URL}${data.photoPath}`);
+                }
+
+                alert('Welcome back! Details found and autofilled.');
+            } else if (res.status === 403) {
+                const data = await res.json();
+                alert(data.message);
+            } else {
+                alert('No previous visitor found with this Aadhar number.');
             }
         } catch (error) {
             console.error(error);
@@ -219,28 +271,28 @@ export const RegisterVisitor = () => {
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
-                                        <input name="name" value={formData.name} onChange={handleChange} className="input-field" placeholder="John Doe" />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Full Name <span className="text-red-500">*</span></label>
+                                        <input name="name" value={formData.name} onChange={handleChange} className="input-field" placeholder="John Doe" required />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Gender</label>
-                                            <select name="gender" value={formData.gender} onChange={handleChange} className="input-field">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Gender <span className="text-red-500">*</span></label>
+                                            <select name="gender" value={formData.gender} onChange={handleChange} className="input-field" required>
                                                 <option>Male</option>
                                                 <option>Female</option>
                                                 <option>Other</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mobile</label>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mobile <span className="text-red-500">*</span></label>
                                             <div className="relative">
-                                                <input name="mobile" value={formData.mobile} onChange={handleChange} className="input-field pr-10" placeholder="9876543210" />
+                                                <input name="mobile" value={formData.mobile} onChange={handleChange} className="input-field pr-10" placeholder="9876543210" required />
                                                 <button
                                                     type="button"
                                                     onClick={handleSearch}
                                                     disabled={searching}
                                                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                                                    title="Search previous visitor"
+                                                    title="Search by Mobile"
                                                 >
                                                     {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                                                 </button>
@@ -248,12 +300,27 @@ export const RegisterVisitor = () => {
                                         </div>
                                     </div>
                                     <div className="md:col-span-2">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Aadhar Card Number <span className="text-red-500">*</span></label>
+                                        <div className="relative">
+                                            <input name="aadharNo" value={formData.aadharNo} onChange={handleChange} className="input-field pr-10" placeholder="12-digit Aadhar Number" required />
+                                            <button
+                                                type="button"
+                                                onClick={handleAadharSearch}
+                                                disabled={searching}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                                                title="Search by Aadhar"
+                                            >
+                                                {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Email (Optional)</label>
                                         <input type="email" name="email" value={formData.email} onChange={handleChange} className="input-field" placeholder="john@example.com" />
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"><MapPin size={12} className="inline mr-1" />Address / Residence</label>
-                                        <input name="address" value={formData.address} onChange={handleChange} className="input-field" placeholder="City, Area" />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"><MapPin size={12} className="inline mr-1" />Address / Residence <span className="text-red-500">*</span></label>
+                                        <input name="address" value={formData.address} onChange={handleChange} className="input-field" placeholder="City, Area" required />
                                     </div>
                                 </div>
                             </div>
@@ -265,12 +332,12 @@ export const RegisterVisitor = () => {
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Name</label>
-                                        <input name="company" value={formData.company} onChange={handleChange} className="input-field" placeholder="Visitor's Organisation" />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Name <span className="text-red-500">*</span></label>
+                                        <input name="company" value={formData.company} onChange={handleChange} className="input-field" placeholder="Visitor's Organisation" required />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Host to Visit</label>
-                                        <input name="host" value={formData.host} onChange={handleChange} className="input-field" placeholder="CSL Employee Name" />
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Host to Visit <span className="text-red-500">*</span></label>
+                                        <input name="host" value={formData.host} onChange={handleChange} className="input-field" placeholder="CSL Employee Name" required />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2"><Briefcase size={12} className="inline mr-1" />Purpose</label>
