@@ -5,5 +5,7 @@ In the terminal, go to: `c:\Users\Admin\Documents\AntiGravity\server`
 - **Restart Application**: `npx pm2 restart vms-server`
 - **Stop Application**: `npx pm2 stop vms-server`
 - **Start Application**: `npx pm2 start ecosystem.config.js --env production`
+- ** Monitor Server***: npx pm2 monit
 
 GITHUB- https://github.com/itforging-svg/VMS-ANTIGRAVITY/
+
