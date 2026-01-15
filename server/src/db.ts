@@ -54,6 +54,7 @@ export class Database {
                     visitor_card_no VARCHAR(100),
                     aadhar_no VARCHAR(20),
                     is_blacklisted BOOLEAN DEFAULT FALSE,
+                    is_deleted BOOLEAN DEFAULT FALSE,
                     photo_path TEXT,
                     status VARCHAR(50) DEFAULT 'PENDING',
                     entry_time TIMESTAMP,
@@ -65,6 +66,11 @@ export class Database {
             // Add plant column if it doesn't exist (for migration)
             await pool.query(`
                 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS plant VARCHAR(100)
+            `);
+
+            // Add is_deleted column if it doesn't exist
+            await pool.query(`
+                ALTER TABLE visitors ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE
             `);
 
             // Add new fields for migration

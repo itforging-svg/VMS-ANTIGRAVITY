@@ -1,10 +1,10 @@
 ### Management Commands
 In the terminal, go to: `c:\Users\Admin\Documents\AntiGravity\server`
-- **Check Status**: `npx pm2 status`
-- **View Logs**: `npx pm2 logs` (Press Ctrl+C to stop viewing)
 - **Restart Application**: `npx pm2 restart vms-server`
 - **Stop Application**: `npx pm2 stop vms-server`
-- **Start Application**: `npx pm2 start ecosystem.config.js --env production`
+- **Start Application**: `m2 start ecosystem.config.js`
+- **Check Status**: `npx pm2 status`
+- **View Logs**: `npx pm2 logs` (Press Ctrl+C to stop viewing)
 - ** Monitor Server***: npx pm2 monit
 
 GITHUB- https://github.com/itforging-svg/VMS-ANTIGRAVITY/

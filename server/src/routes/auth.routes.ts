@@ -58,16 +58,16 @@ export async function seedAdmin() {
 
     try {
         // Super Admin
-        const admin = await db.get('SELECT * FROM users WHERE username = $1', ['admin']);
+        const admin = await db.get('SELECT * FROM users WHERE username = $1', ['cslsuperadmin']);
         if (!admin) {
-            const hash = await bcrypt.hash('admin123', 10);
-            await db.run('INSERT INTO users (username, password, plant) VALUES ($1, $2, $3)', ['admin', hash, null]);
-            console.log('Super admin created: admin / admin123');
+            const hash = await bcrypt.hash('cslsuperadmin', 10);
+            await db.run('INSERT INTO users (username, password, plant) VALUES ($1, $2, $3)', ['cslsuperadmin', hash, null]);
+            console.log('Super admin created: cslsuperadmin / cslsuperadmin');
         }
 
         // --- NEW LOGIC: Clean up old/unused admins ---
         // Get all users who are NOT 'admin' and NOT in our new list
-        const validUsers = ['admin', ...plants.map(p => p.user)];
+        const validUsers = ['cslsuperadmin', ...plants.map(p => p.user)];
         // Create parameter placeholders like $1, $2, $3...
         const placeholders = validUsers.map((_, i) => `$${i + 1}`).join(', ');
 

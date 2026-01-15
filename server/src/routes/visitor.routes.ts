@@ -33,12 +33,12 @@ router.get('/search', async (req, res) => {
         let visitor;
         if (mobile) {
             visitor = await db.get(
-                'SELECT * FROM visitors WHERE mobile = $1 ORDER BY id DESC LIMIT 1',
+                'SELECT * FROM visitors WHERE mobile = $1 AND (is_deleted IS FALSE OR is_deleted IS NULL) ORDER BY id DESC LIMIT 1',
                 [mobile]
             );
         } else if (aadhar) {
             visitor = await db.get(
-                'SELECT * FROM visitors WHERE aadhar_no = $1 ORDER BY id DESC LIMIT 1',
+                'SELECT * FROM visitors WHERE aadhar_no = $1 AND (is_deleted IS FALSE OR is_deleted IS NULL) ORDER BY id DESC LIMIT 1',
                 [aadhar]
             );
         }
@@ -71,38 +71,36 @@ router.get('/search', async (req, res) => {
 router.get('/', authenticateToken, async (req, res) => {
     try {
         const { status, limit, search } = req.query;
-        let query = 'SELECT * FROM visitors';
+        let query = 'SELECT * FROM visitors WHERE (is_deleted IS FALSE OR is_deleted IS NULL)';
         const params: any[] = [];
         let paramIndex = 1;
 
         if (search) {
             // Global Search Mode
-            query += ` WHERE (name LIKE $${paramIndex} OR mobile LIKE $${paramIndex} OR email LIKE $${paramIndex} OR company LIKE $${paramIndex} OR aadhar_no LIKE $${paramIndex})`;
+            // Remove 'WHERE' from search part since we already have WHERE clause for is_deleted
+            query += ` AND (name LIKE $${paramIndex} OR mobile LIKE $${paramIndex} OR email LIKE $${paramIndex} OR company LIKE $${paramIndex} OR aadhar_no LIKE $${paramIndex})`;
             params.push(`%${search}%`);
             paramIndex++;
         } else {
             // Default Daily View Mode
             const { visitDate } = req.query;
             if (visitDate) {
-                query += ` WHERE visit_date = $${paramIndex}`;
+                query += ` AND visit_date = $${paramIndex}`;
                 params.push(visitDate);
                 paramIndex++;
             }
         }
 
         if (status) {
-            // Append status filter carefully
-            const hasWhere = query.includes('WHERE');
-            query += (hasWhere ? ' AND' : ' WHERE') + ` status = $${paramIndex}`;
+            // Append status filter
+            query += ` AND status = $${paramIndex}`;
             params.push(status);
             paramIndex++;
         }
 
         // Filter by plant if user is not a super admin
         if ((req as any).user && (req as any).user.plant) {
-            // Check if WHERE clause exists
-            const hasWhere = query.includes('WHERE');
-            query += (hasWhere ? ' AND' : ' WHERE') + ` plant = $${paramIndex}`;
+            query += ` AND plant = $${paramIndex}`;
             params.push((req as any).user.plant);
             paramIndex++;
         }
@@ -152,7 +150,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // GET Visitor by ID
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
-        const visitor = await db.get('SELECT * FROM visitors WHERE id = $1', [req.params.id]);
+        const visitor = await db.get('SELECT * FROM visitors WHERE id = $1 AND (is_deleted IS FALSE OR is_deleted IS NULL)', [req.params.id]);
         if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
 
         // Convert snake_case to camelCase
@@ -193,7 +191,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
         // Check if blacklisted by mobile or aadhar
         const blacklisted = await db.get(
-            'SELECT * FROM visitors WHERE (mobile = $1 OR (aadhar_no = $2 AND aadhar_no IS NOT NULL AND aadhar_no != \'\')) AND is_blacklisted = TRUE LIMIT 1',
+            'SELECT * FROM visitors WHERE (mobile = $1 OR (aadhar_no = $2 AND aadhar_no IS NOT NULL AND aadhar_no != \'\')) AND is_blacklisted = TRUE AND (is_deleted IS FALSE OR is_deleted IS NULL) LIMIT 1',
             [mobile, aadharNo]
         );
 
@@ -203,55 +201,76 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
         const photoPath = req.file ? `/uploads/${req.file.filename}` : '';
 
-        // Generate Batch No in format: VMS-DDMMYYYY-0001
-        const now = new Date();
-        const day = String(now.getDate()).padStart(2, '0');
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const year = now.getFullYear();
-        const dateStr = `${day}${month}${year}`;
+        // Robust Batch No Generation with retry logic for concurrency
+        let result;
+        let retries = 0;
+        const maxRetries = 5;
 
-        // Get last batch number for today to generate sequential number
-        const batchPrefix = `VMS-${dateStr}`;
-        const lastVisitor = await db.get(
-            `SELECT batch_no FROM visitors WHERE batch_no LIKE $1 ORDER BY id DESC LIMIT 1`,
-            [`${batchPrefix}-%`]
-        );
+        while (retries < maxRetries) {
+            // Generate Batch No in format: VMS-DDMMYYYY-0001
+            const now = new Date();
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+            const dateStr = `${day}${month}${year}`;
 
-        let sequentialNum = '0001';
-        if (lastVisitor && (lastVisitor as any).batch_no) {
-            const lastBatchNo = (lastVisitor as any).batch_no;
-            const parts = lastBatchNo.split('-');
-            const lastSeq = parseInt(parts[parts.length - 1]);
+            // Get last batch number for today to generate sequential number
+            const batchPrefix = `VMS-${dateStr}`;
+            const lastVisitor = await db.get(
+                `SELECT batch_no FROM visitors WHERE batch_no LIKE $1 ORDER BY id DESC LIMIT 1`,
+                [`${batchPrefix}-%`]
+            );
 
-            if (!isNaN(lastSeq)) {
-                sequentialNum = String(lastSeq + 1).padStart(4, '0');
+            let sequentialNum = '0001';
+            if (lastVisitor && (lastVisitor as any).batch_no) {
+                const lastBatchNo = (lastVisitor as any).batch_no;
+                const parts = lastBatchNo.split('-');
+                const lastSeq = parseInt(parts[parts.length - 1]);
+
+                if (!isNaN(lastSeq)) {
+                    sequentialNum = String(lastSeq + 1).padStart(4, '0');
+                }
+            }
+
+            const batchNo = `${batchPrefix}-${sequentialNum}`;
+
+            const offset = now.getTimezoneOffset() * 60000;
+            const local = new Date(now.getTime() - offset);
+            const localTimeStr = local.toISOString().slice(0, 19).replace('T', ' ');
+
+            const sql = `
+                INSERT INTO visitors (
+                    batch_no, name, gender, mobile, email, address,
+                    visit_date, visit_time, duration, company, host, purpose, plant, assets,
+                    safety_equipment, visitor_card_no, aadhar_no,
+                    photo_path, status, entry_time
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'PENDING', $19)
+                RETURNING *
+            `;
+
+            const params = [
+                batchNo, name, gender, mobile, email || '', address || '',
+                visitDate, visitTime, duration, company, host, purpose, plant, assets,
+                safetyEquipment || '', visitorCardNo || '', aadharNo || '',
+                photoPath, localTimeStr
+            ];
+
+            try {
+                result = await db.get(sql, params);
+                break; // Success!
+            } catch (error: any) {
+                // If it's a unique constraint violation on batch_no, retry
+                if (error.code === '23505' && error.detail && error.detail.includes('batch_no')) {
+                    console.warn(`Batch collision detected for ${batchNo}. Retrying... (${retries + 1}/${maxRetries})`);
+                    retries++;
+                    if (retries === maxRetries) throw error;
+                    // Short delay to allow other transaction to complete
+                    await new Promise(resolve => setTimeout(resolve, 50 * retries));
+                } else {
+                    throw error; // Other error, don't retry
+                }
             }
         }
-
-        const batchNo = `${batchPrefix}-${sequentialNum}`;
-
-        const offset = now.getTimezoneOffset() * 60000;
-        const local = new Date(now.getTime() - offset);
-        const localTimeStr = local.toISOString().slice(0, 19).replace('T', ' ');
-
-        const sql = `
-            INSERT INTO visitors (
-                batch_no, name, gender, mobile, email, address,
-                visit_date, visit_time, duration, company, host, purpose, plant, assets,
-                safety_equipment, visitor_card_no, aadhar_no,
-                photo_path, status, entry_time
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, 'PENDING', $19)
-            RETURNING *
-        `;
-
-        const params = [
-            batchNo, name, gender, mobile, email || '', address || '',
-            visitDate, visitTime, duration, company, host, purpose, plant, assets,
-            safetyEquipment || '', visitorCardNo || '', aadharNo || '',
-            photoPath, localTimeStr
-        ];
-
-        const result = await db.get(sql, params);
 
         // Map to camelCase
         const mapped = {
@@ -382,19 +401,27 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE Visitor (Super Admin Only)
+// DELETE Visitor (Soft Delete)
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Only super admin (plant is null) can delete
+        // Note: Logic allows anyone with access to call this, but typically UI restricts to admins.
+        // Requirement was: "if anyone delete... even if admin / superadmin... only hidden"
+        // So we just soft delete regardless of who calls it (as long as authenticated)
+
+        // Only super admin (plant is null) can delete - keeping this check as per original code for now, 
+        // but just changing the action to soft delete. 
+        // User asked: "if anyone delete... the given entry will be only hidden"
+        // The original code restricted DELETE to Super Admin. I will keep that restriction unless asked otherwise,
+        // but ensure the action is SOFT delete.
+
         if ((req as any).user && (req as any).user.plant) {
             return res.status(403).json({ message: 'Access denied: Only Super Admin can delete records' });
         }
 
-        const result = await db.run('DELETE FROM visitors WHERE id = $1', [id]);
+        await db.run('UPDATE visitors SET is_deleted = TRUE WHERE id = $1', [id]);
 
-        // In sqlite3-promisify, we check changes or just assume success if no error
         res.json({ message: 'Visitor deleted successfully' });
     } catch (error) {
         console.error('Error deleting visitor:', error);
