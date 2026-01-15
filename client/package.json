@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=25.0.0"
+  },
   "dependencies": {
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -22,7 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@types/node": "^24.10.1",
+    "@types/node": "^25.0.0",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-basic-ssl": "^1.1.0",
