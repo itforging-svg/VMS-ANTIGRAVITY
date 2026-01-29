@@ -7,6 +7,92 @@ import { API_URL } from '../config';
 export const RegisterVisitor = () => {
     const webcamRef = useRef<Webcam>(null);
     const [imgSrc, setImgSrc] = useState<string | null>(null);
+    const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+    const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
+    const [cameraError, setCameraError] = useState<string | null>(null);
+    const [isSecureContext, setIsSecureContext] = useState<boolean>(true);
+    const [mediaSupported, setMediaSupported] = useState<boolean>(true);
+    const [diagInfo, setDiagInfo] = useState<string>('');
+    const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+    const [cameraKey, setCameraKey] = useState<number>(0);
+    const [useRawCamera, setUseRawCamera] = useState<boolean>(false);
+    const rawVideoRef = useRef<HTMLVideoElement>(null);
+
+    const startRawCamera = useCallback(async () => {
+        if (rawVideoRef.current && useRawCamera) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : true
+                });
+                rawVideoRef.current.srcObject = stream;
+            } catch (err) {
+                console.error("Raw camera error:", err);
+                setCameraError(String(err));
+            }
+        }
+    }, [selectedDeviceId, useRawCamera]);
+
+    React.useEffect(() => {
+        if (useRawCamera) {
+            startRawCamera();
+        }
+    }, [useRawCamera, startRawCamera]);
+
+    const runDiagnostics = useCallback(async () => {
+        const secure = window.isSecureContext;
+        const supported = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        setIsSecureContext(secure);
+        setMediaSupported(supported);
+
+        let info = `Secure: ${secure}, Media: ${supported}`;
+        if (supported) {
+            try {
+                const devs = await navigator.mediaDevices.enumerateDevices();
+                const vids = devs.filter(d => d.kind === 'videoinput');
+                info += `, Cameras: ${vids.length}`;
+                if (vids.length > 0) {
+                    const current = vids.find(d => d.deviceId === selectedDeviceId) || vids[0];
+                    info += ` | Active: ${current.label || 'Unknown'}`;
+                }
+            } catch (e) {
+                info += `, EnumError: ${String(e)}`;
+            }
+        }
+        setDiagInfo(info);
+    }, [selectedDeviceId]);
+
+    const restartCamera = () => {
+        setCameraKey(prev => prev + 1);
+        setCameraError(null);
+        runDiagnostics();
+    };
+
+    React.useEffect(() => {
+        runDiagnostics();
+    }, [runDiagnostics]);
+
+    const handleDevices = useCallback(
+        (mediaDevices: MediaDeviceInfo[]) => {
+            const videoDevices = mediaDevices.filter(({ kind }) => kind === "videoinput");
+            setDevices(videoDevices);
+            if (videoDevices.length > 0 && !selectedDeviceId) {
+                // Check if any device label looks like a real camera vs virtual
+                const realCamera = videoDevices.find(d => !d.label.toLowerCase().includes('virtual'));
+                setSelectedDeviceId(realCamera?.deviceId || videoDevices[0].deviceId);
+            }
+        },
+        [selectedDeviceId]
+    );
+
+    React.useEffect(() => {
+        navigator.mediaDevices.enumerateDevices().then(handleDevices);
+    }, [handleDevices]);
+
+    const onUserMediaError = useCallback((error: string | DOMException) => {
+        console.error("Camera error:", error);
+        setCameraError(typeof error === 'string' ? error : error.message);
+    }, []);
+
     const [formData, setFormData] = useState({
         name: '',
         gender: 'Male',
@@ -195,7 +281,7 @@ export const RegisterVisitor = () => {
                         <img src="/logo.png" alt="CS Logo" className="h-14 w-auto object-contain bg-white/10 rounded-lg p-1" />
                         <div>
                             <h1 className="text-2xl font-extrabold text-white tracking-tight">VISITOR REGISTRATION</h1>
-                            <p className="text-xs text-slate-300 uppercase tracking-widest font-semibold">Chandan Steel Ltd</p>
+                            <p className="text-xs text-slate-300 uppercase tracking-widest font-semibold">Chandan Steel Ltd <span className="text-[10px] font-mono text-amber-500 opacity-50 ml-2">v2.2.dbg</span></p>
                         </div>
                     </div>
                     <button onClick={() => navigate('/login')} className="bg-white/10 px-4 py-2 rounded-full text-xs font-bold text-white hover:bg-white/20 hover:shadow shadow-sm transition-all border border-white/10 uppercase tracking-wider">
@@ -219,13 +305,66 @@ export const RegisterVisitor = () => {
                                 {imgSrc ? (
                                     <img src={imgSrc} alt="Captured" className="w-full h-full object-cover" />
                                 ) : (
-                                    <Webcam
-                                        audio={false}
-                                        ref={webcamRef}
-                                        screenshotFormat="image/jpeg"
-                                        className="w-full h-full object-cover"
-                                        videoConstraints={{ facingMode: "user" }}
-                                    />
+                                    <div className="relative w-full h-full">
+                                        <div className="absolute top-2 left-2 bg-black/50 text-[10px] text-white px-2 py-1 rounded font-mono z-30">
+                                            {diagInfo || 'Init...'}
+                                        </div>
+                                        <Webcam
+                                            key={cameraKey}
+                                            audio={false}
+                                            ref={webcamRef}
+                                            screenshotFormat="image/jpeg"
+                                            className="w-full h-full object-cover"
+                                            videoConstraints={{
+                                                facingMode: facingMode,
+                                                deviceId: selectedDeviceId
+                                            }}
+                                            onUserMedia={() => setCameraError(null)}
+                                            onUserMediaError={onUserMediaError}
+                                        />
+
+                                        <video
+                                            ref={rawVideoRef}
+                                            autoPlay
+                                            playsInline
+                                            muted
+                                            className={`absolute inset-0 w-full h-full object-cover z-20 bg-black ${useRawCamera ? 'block' : 'hidden'}`}
+                                        />
+                                        {cameraError && (
+                                            <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-6 text-center z-10">
+                                                <Camera className="text-red-500 mb-4" size={48} />
+                                                <p className="text-white font-bold mb-2">Camera Access Error</p>
+                                                <p className="text-slate-400 text-sm mb-4">{cameraError}</p>
+
+                                                {!isSecureContext && (
+                                                    <div className="mb-4 text-xs bg-red-500/20 text-red-400 p-3 rounded border border-red-500/30">
+                                                        ⚠️ This site is not running over a secure HTTPS connection. Browsers block camera access on non-secure sites.
+                                                    </div>
+                                                )}
+
+                                                <div className="text-[10px] text-slate-500 mb-4 font-mono">{diagInfo}</div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCameraError(null);
+                                                        runDiagnostics();
+                                                    }}
+                                                    className="bg-amber-500 text-slate-900 px-4 py-2 rounded-lg text-xs font-bold uppercase"
+                                                >
+                                                    Retry Connection
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {!mediaSupported && (
+                                            <div className="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center p-6 text-center z-20">
+                                                <div className="w-12 h-12 border-2 border-slate-700 rounded-full flex items-center justify-center mb-4 text-slate-500 italic">!</div>
+                                                <p className="text-white font-bold">Browser Not Supported</p>
+                                                <p className="text-slate-400 text-xs">Your browser does not support camera access or it is disabled in settings.</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
 
                                 {/* Overlay Frame */}
@@ -237,16 +376,63 @@ export const RegisterVisitor = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
-                                {imgSrc ? (
-                                    <button onClick={retake} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors">
-                                        <RefreshCw size={20} /> Retake
-                                    </button>
-                                ) : (
-                                    <button onClick={capture} className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 shadow-lg shadow-slate-900/20 transition-all">
-                                        <Camera size={20} /> Capture Photo
-                                    </button>
+                            <div className="flex flex-col gap-3">
+                                {!imgSrc && devices.length > 0 && (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Select Camera Device</label>
+                                        <select
+                                            value={selectedDeviceId}
+                                            onChange={(e) => setSelectedDeviceId(e.target.value)}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-amber-500"
+                                        >
+                                            <option value="">Default (Auto)</option>
+                                            {devices.map((device, key) => (
+                                                <option key={key} value={device.deviceId}>
+                                                    {device.label || `Camera ${key + 1}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 )}
+
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFacingMode(prev => prev === "user" ? "environment" : "user")}
+                                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <RefreshCw size={12} className={facingMode === "environment" ? "rotate-180 transition-transform" : "transition-transform"} />
+                                        Switch Mode ({facingMode})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={restartCamera}
+                                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <Camera size={12} />
+                                        Restart Stream
+                                    </button>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setUseRawCamera(!useRawCamera)}
+                                    className="w-full bg-slate-800 text-slate-200 py-2 rounded-lg text-[10px] font-bold uppercase hover:bg-slate-700 transition-colors"
+                                >
+                                    {useRawCamera ? "Switch to Standard Mode" : "Debug: Force Raw Mode"}
+                                </button>
+
+                                <div className="flex gap-3">
+                                    {imgSrc ? (
+                                        <button type="button" onClick={retake} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors">
+                                            <RefreshCw size={20} /> Retake
+                                        </button>
+                                    ) : (
+                                        <button type="button" onClick={capture} className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 shadow-lg shadow-slate-900/20 transition-all">
+                                            <Camera size={20} /> Capture Photo
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

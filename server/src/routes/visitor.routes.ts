@@ -208,10 +208,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
         while (retries < maxRetries) {
             // Generate Batch No in format: VMS-DDMMYYYY-0001
-            const now = new Date();
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const year = now.getFullYear();
+            // Use Intl.DateTimeFormat to ensure IST regardless of server timezone
+            const istDateStr = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            }).format(new Date());
+
+            // istDateStr is usually "DD/MM/YYYY"
+            const [day, month, year] = istDateStr.split('/');
             const dateStr = `${day}${month}${year}`;
 
             // Get last batch number for today to generate sequential number
@@ -232,11 +238,26 @@ router.post('/', upload.single('photo'), async (req, res) => {
                 }
             }
 
+
             const batchNo = `${batchPrefix}-${sequentialNum}`;
 
-            const offset = now.getTimezoneOffset() * 60000;
-            const local = new Date(now.getTime() - offset);
-            const localTimeStr = local.toISOString().slice(0, 19).replace('T', ' ');
+            // Get Current IST Time for DB
+            const now = new Date();
+            const istTimeStr = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).format(now);
+
+            // istTimeStr format: "DD/MM/YYYY, HH:MM:SS"
+            const [dPart, tPart] = istTimeStr.split(', ');
+            const [d, m, y] = dPart.split('/');
+            const localTimeStr = `${y}-${m}-${d} ${tPart}`;
 
             const sql = `
                 INSERT INTO visitors (
@@ -316,18 +337,40 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
         if (status === 'EXITED') {
             // Generate Local IST Time String for Postgres
             const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            const local = new Date(now.getTime() - offset);
-            const localTimeStr = local.toISOString().slice(0, 19).replace('T', ' '); // "YYYY-MM-DD HH:MM:SS"
+            const istTimeStr = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).format(now);
+
+            const [dPart, tPart] = istTimeStr.split(', ');
+            const [d, m, y] = dPart.split('/');
+            const localTimeStr = `${y}-${m}-${d} ${tPart}`;
 
             updates += `, exit_time = $${paramIndex}`;
             params.push(localTimeStr);
             paramIndex++;
         } else if (status === 'APPROVED') {
             const now = new Date();
-            const offset = now.getTimezoneOffset() * 60000;
-            const local = new Date(now.getTime() - offset);
-            const localTimeStr = local.toISOString().slice(0, 19).replace('T', ' ');
+            const istTimeStr = new Intl.DateTimeFormat('en-IN', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).format(now);
+
+            const [dPart, tPart] = istTimeStr.split(', ');
+            const [d, m, y] = dPart.split('/');
+            const localTimeStr = `${y}-${m}-${d} ${tPart}`;
 
             updates += `, entry_time = $${paramIndex}`;
             params.push(localTimeStr);

@@ -57,10 +57,18 @@ export class Database {
                     is_deleted BOOLEAN DEFAULT FALSE,
                     photo_path TEXT,
                     status VARCHAR(50) DEFAULT 'PENDING',
-                    entry_time TIMESTAMP,
-                    exit_time TIMESTAMP,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    entry_time TIMESTAMPTZ,
+                    exit_time TIMESTAMPTZ,
+                    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
                 )
+            `);
+
+            // Migration for TIMESTAMPTZ
+            await pool.query(`
+                ALTER TABLE visitors 
+                ALTER COLUMN entry_time TYPE TIMESTAMPTZ,
+                ALTER COLUMN exit_time TYPE TIMESTAMPTZ,
+                ALTER COLUMN created_at TYPE TIMESTAMPTZ;
             `);
 
             // Add plant column if it doesn't exist (for migration)
