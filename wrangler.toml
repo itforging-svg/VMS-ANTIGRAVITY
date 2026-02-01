@@ -1,0 +1,8 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "vms-antigravity"
+compatibility_date = "2025-02-01"
+compatibility_flags = ["nodejs_compat"]
+
+[pages_build_config]
+build_command = "npm install && cd client && npm install && npm run build"
+destination_dir = "client/dist"
