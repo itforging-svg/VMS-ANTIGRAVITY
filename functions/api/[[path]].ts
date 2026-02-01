@@ -62,12 +62,24 @@ app.post('/auth/login', async (c) => {
 
     if (error || !user) return c.json({ message: 'Invalid credentials' }, 401);
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return c.json({ message: 'Invalid credentials' }, 401);
+    const isMatch = await new Promise((resolve, reject) => {
+        bcrypt.compare(password, user.password, (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+        });
+    });
+
+    if (!isMatch) return c.json({ message: 'Invalid credentials' }, 401);
 
     const secret = c.env.JWT_SECRET || SECRET_KEY;
     // Hono sign returns a Promise<string>
-    const token = await sign({ id: user.id, username: user.username, plant: user.plant, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 12 }, secret); // 12h exp
+    const token = await sign({
+        id: user.id,
+        username: user.username,
+        plant: user.plant,
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 12,
+        iat: Math.floor(Date.now() / 1000)
+    }, secret);
 
     return c.json({ token, username: user.username, plant: user.plant });
 });
