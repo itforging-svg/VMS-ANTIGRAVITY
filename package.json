@@ -1,0 +1,23 @@
+{
+  "name": "vms-antigravity",
+  "version": "1.0.0",
+  "description": "Visitor Management System migrated to Cloudflare Pages",
+  "main": "index.js",
+  "scripts": {
+    "migrate": "npx ts-node scripts/migrate-to-supabase.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "hono": "^4.6.19",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/node": "^22.13.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}
