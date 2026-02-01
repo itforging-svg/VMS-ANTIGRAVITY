@@ -5,4 +5,4 @@ compatibility_flags = ["nodejs_compat"]
 
 [pages_build_config]
 build_command = "npm install && cd client && npm install && npm run build"
-destination_dir = "client/dist"
+pages_build_output_dir = "client/dist"
