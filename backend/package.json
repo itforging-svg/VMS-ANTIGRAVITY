@@ -1,0 +1,16 @@
+{
+    "name": "vms-backend",
+    "version": "1.0.0",
+    "main": "src/index.ts",
+    "dependencies": {
+        "hono": "^4.6.19",
+        "@supabase/supabase-js": "^2.48.1",
+        "bcryptjs": "^2.4.3"
+    },
+    "devDependencies": {
+        "wrangler": "^3.101.0",
+        "@cloudflare/workers-types": "^4.20250124.0",
+        "@types/bcryptjs": "^2.4.6",
+        "typescript": "^5.7.3"
+    }
+}

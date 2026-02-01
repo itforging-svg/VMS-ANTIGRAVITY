@@ -6,10 +6,13 @@ import { sign } from 'hono/jwt';
 import { createClient } from '@supabase/supabase-js';
 import * as bcrypt from 'bcryptjs';
 
-const app = new Hono().basePath('/api');
+const app = new Hono();
 
-// CORS should be handled, adding it for safety
-app.use('/*', cors());
+// CORS for standalone worker
+app.use('/*', cors({
+    origin: '*', // For development, update with frontend URL later
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+}));
 
 const SECRET_KEY = 'supersecretkeyshouldbechanged'; // Fallback
 
@@ -18,12 +21,10 @@ const getSupabase = (env: any) => createClient(env.SUPABASE_URL, env.SUPABASE_SE
 
 // --- Auth Middleware ---
 // Using Hono's built-in JWT middleware for protected routes
-// We apply it dynamically or use a custom wrapper to match existing logic
 const authMiddleware = async (c: any, next: any) => {
     const secret = c.env.JWT_SECRET || SECRET_KEY;
     const handler = jwt({ secret });
     return handler(c, async () => {
-        // Hono jwt middleware puts payload in c.get('jwtPayload')
         const payload = c.get('jwtPayload');
         if (payload) {
             c.set('user', payload);
@@ -36,6 +37,9 @@ const authMiddleware = async (c: any, next: any) => {
 
 // --- Routes ---
 
+// Health check / Ping
+app.get('/ping', (c) => c.text('Pong! Backend Worker is active.'));
+
 // Debug Route
 app.get('/debug', (c) => {
     return c.json({
@@ -46,7 +50,7 @@ app.get('/debug', (c) => {
     });
 });
 
-// Health check
+// Health check (legacy)
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date(), env: !!c.env.SUPABASE_URL }));
 
 // Auth: Login
@@ -72,7 +76,6 @@ app.post('/auth/login', async (c) => {
     if (!isMatch) return c.json({ message: 'Invalid credentials' }, 401);
 
     const secret = c.env.JWT_SECRET || SECRET_KEY;
-    // Hono sign returns a Promise<string>
     const token = await sign({
         id: user.id,
         username: user.username,
@@ -83,6 +86,9 @@ app.post('/auth/login', async (c) => {
 
     return c.json({ token, username: user.username, plant: user.plant });
 });
+
+// ... [rest of the routes are identical but without /api prefix in the path]
+// Since we removed basePath('/api'), /visitors is now /visitors relative to the Worker domain.
 
 // Visitors: Get All
 app.get('/visitors', authMiddleware, async (c) => {
@@ -110,9 +116,78 @@ app.get('/visitors', authMiddleware, async (c) => {
     return c.json(data);
 });
 
-// Visitors: Create (Assuming no auth needed for self-registration, or add authMiddleware if internal)
-// Leaving as is if public, or adding if internal. Based on previous code it was public. 
-// CHECK: app.post('/visitors', ... ) in original code didn't have authenticate. Correct.
+// Visitors: Create
+app.post('/visitors', async (c) => {
+    const supabase = getSupabase(c.env);
+    const formData = await c.req.parseBody();
+    const photo = formData['photo'] as File;
+
+    // 1. Photo Upload
+    let photoPath = '';
+    if (photo && photo instanceof File) {
+        const filename = `${Date.now()}-${photo.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('visitor-photos')
+            .upload(`uploads/${filename}`, await photo.arrayBuffer(), {
+                contentType: photo.type,
+            });
+
+        if (uploadError) return c.json({ message: 'Photo upload failed', error: uploadError.message }, 500);
+
+        photoPath = supabase.storage.from('visitor-photos').getPublicUrl(`uploads/${filename}`).data.publicUrl;
+    }
+
+    // 2. Batch Number Generation
+    const istDateStr = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date());
+    const [day, month, year] = istDateStr.split('/');
+    const dateStr = `${day}${month}${year}`;
+    const batchPrefix = `VMS-${dateStr}`;
+
+    const { data: lastVisitor } = await supabase
+        .from('visitors')
+        .select('batch_no')
+        .ilike('batch_no', `${batchPrefix}-%`)
+        .order('id', { ascending: false })
+        .limit(1)
+        .single();
+
+    let sequentialNum = '0001';
+    if (lastVisitor && lastVisitor.batch_no) {
+        const parts = lastVisitor.batch_no.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1]);
+        if (!isNaN(lastSeq)) sequentialNum = String(lastSeq + 1).padStart(4, '0');
+    }
+    const batchNo = `${batchPrefix}-${sequentialNum}`;
+
+    // 3. Insert Record
+    const visitorData = {
+        batch_no: batchNo,
+        name: formData['name'],
+        gender: formData['gender'],
+        mobile: formData['mobile'],
+        email: formData['email'] || '',
+        address: formData['address'] || '',
+        visit_date: formData['visitDate'],
+        visit_time: formData['visitTime'],
+        duration: formData['duration'],
+        company: formData['company'],
+        host: formData['host'],
+        purpose: formData['purpose'],
+        plant: formData['plant'],
+        assets: formData['assets'],
+        safety_equipment: formData['safetyEquipment'] || '',
+        visitor_card_no: formData['visitorCardNo'] || '',
+        aadhar_no: formData['aadharNo'] || '',
+        photo_path: photoPath,
+        status: 'PENDING',
+        created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase.from('visitors').insert([visitorData]).select().single();
+    if (error) return c.json({ message: error.message }, 500);
+
+    return c.json(data, 201);
+});
 
 // Reports: CSV Export
 app.get('/reports/csv', authMiddleware, async (c) => {
@@ -195,4 +270,4 @@ app.delete('/visitors/:id', authMiddleware, async (c) => {
     return c.json({ message: 'Visitor deleted successfully' });
 });
 
-export const onRequest = handle(app);
+export default app;
