@@ -257,7 +257,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
             // istTimeStr format: "DD/MM/YYYY, HH:MM:SS"
             const [dPart, tPart] = istTimeStr.split(', ');
             const [d, m, y] = dPart.split('/');
-            const localTimeStr = `${y}-${m}-${d} ${tPart}`;
+            const localTimeStr = `${y}-${m}-${d} ${tPart}+05:30`;
 
             const sql = `
                 INSERT INTO visitors (
@@ -350,7 +350,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
             const [dPart, tPart] = istTimeStr.split(', ');
             const [d, m, y] = dPart.split('/');
-            const localTimeStr = `${y}-${m}-${d} ${tPart}`;
+            const localTimeStr = `${y}-${m}-${d} ${tPart}+05:30`;
 
             updates += `, exit_time = $${paramIndex}`;
             params.push(localTimeStr);
@@ -370,7 +370,7 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
 
             const [dPart, tPart] = istTimeStr.split(', ');
             const [d, m, y] = dPart.split('/');
-            const localTimeStr = `${y}-${m}-${d} ${tPart}`;
+            const localTimeStr = `${y}-${m}-${d} ${tPart}+05:30`;
 
             updates += `, entry_time = $${paramIndex}`;
             params.push(localTimeStr);

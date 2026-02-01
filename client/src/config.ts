@@ -1,3 +1,3 @@
 // Configuration for API URL
-// For network access, this MUST be the network IP address, not localhost
-export const API_URL = '';
+// For Cloudflare Pages, use a relative path to the Functions directory
+export const API_URL = '/api';

@@ -328,7 +328,13 @@ export const Dashboard = () => {
                                             <td className="p-4 pl-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden border border-slate-200">
-                                                        {v.photoPath && <img src={`${API_URL}${v.photoPath}`} className="w-full h-full object-cover" alt="user" />}
+                                                        {v.photoPath && (
+                                                            <img
+                                                                src={v.photoPath.startsWith('http') ? v.photoPath : `${API_URL}${v.photoPath}`}
+                                                                className="w-full h-full object-cover"
+                                                                alt="user"
+                                                            />
+                                                        )}
                                                     </div>
                                                     <span className="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{v.batchNo}</span>
                                                 </div>

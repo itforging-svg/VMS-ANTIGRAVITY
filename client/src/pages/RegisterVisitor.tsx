@@ -216,8 +216,8 @@ export const RegisterVisitor = () => {
 
                 // Auto-fill photo if available
                 if (data.photoPath) {
-                    // Append full URL
-                    setImgSrc(`${API_URL}${data.photoPath}`);
+                    // Handle full URL from Supabase vs legacy relative path
+                    setImgSrc(data.photoPath.startsWith('http') ? data.photoPath : `${API_URL}${data.photoPath}`);
                 }
 
                 alert('Welcome back! Details found and autofilled.');
@@ -255,7 +255,7 @@ export const RegisterVisitor = () => {
 
                 // Auto-fill photo if available
                 if (data.photoPath) {
-                    setImgSrc(`${API_URL}${data.photoPath}`);
+                    setImgSrc(data.photoPath.startsWith('http') ? data.photoPath : `${API_URL}${data.photoPath}`);
                 }
 
                 alert('Welcome back! Details found and autofilled.');

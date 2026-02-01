@@ -9,12 +9,8 @@ In the terminal, go to: `c:\Users\Admin\Documents\AntiGravity\server`
 
 GITHUB- https://github.com/itforging-svg/VMS-ANTIGRAVITY/
 
---------------------------Scipt Running issue------------------
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
----------------------------Vehical Entry System----------------------
-Frontend: 5174 
-npx pm2 start node_modules\serve\build\main.js --name "vehicle-entry-frontend" -- -s dist -l 5174 --ssl-cert "..\\backend\\cert.pem" --ssl-key "..\\backend\\key.pem"
 
-Backend: 5001
-npx pm2 start ecosystem.config.js
+Blacklist not able to add
+
+Could not find the 'created_by' column of 'vehicle_blacklist' in the schema cache
