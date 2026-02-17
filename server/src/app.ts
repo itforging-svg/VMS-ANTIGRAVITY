@@ -23,7 +23,20 @@ app.use(helmet({
         },
     },
 }));
-app.use(cors());
+
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow non-browser requests (no Origin header)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('CORS not allowed'));
+    },
+}));
 app.use(json({ limit: '10mb' })); // Allow large photo payloads
 
 // Static Files (Photos)

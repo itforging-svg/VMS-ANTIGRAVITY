@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 import { db } from '../db';
 
 const router = Router();
-const SECRET_KEY = process.env.JWT_SECRET || 'supersecretkeyshouldbechanged';
 
 // Interface for User
 interface User {
@@ -33,7 +32,10 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = jwt.sign({ id: user.id, username: user.username, plant: (user as any).plant }, SECRET_KEY, { expiresIn: '12h' });
+        const secret = process.env.JWT_SECRET;
+        if (!secret) return res.status(500).json({ message: 'Server misconfiguration: JWT secret missing' });
+
+        const token = jwt.sign({ id: user.id, username: user.username, plant: (user as any).plant }, secret, { expiresIn: '12h' });
         res.json({ token, username: user.username, plant: (user as any).plant });
     } catch (error) {
         console.error('Login error:', error);

@@ -4,6 +4,16 @@ import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 
+
+const csvSafe = (value: unknown) => {
+    const stringValue = String(value ?? '');
+    if (/^[=+\-@]/.test(stringValue)) {
+        return `'${stringValue}`;
+    }
+    return stringValue;
+};
+
+
 router.get('/csv', authenticateToken, async (req, res) => {
     try {
         const { from, to } = req.query;
@@ -47,20 +57,20 @@ router.get('/csv', authenticateToken, async (req, res) => {
         visitors.forEach(v => {
             const photoUrl = v.photo_path ? `${baseUrl}${v.photo_path}` : '';
             const row = [
-                v.batch_no,
-                `"${v.name}"`,
-                v.mobile,
-                `"${v.company}"`,
-                `"${v.host}"`,
-                `"${v.purpose}"`,
-                `"${v.plant || ''}"`,
-                `"${v.assets || ''}"`,
-                v.visit_date,
-                v.visit_time,
-                v.entry_time || '',
-                v.exit_time || '',
-                v.status,
-                `"${photoUrl}"`
+                csvSafe(v.batch_no),
+                `"${csvSafe(v.name)}"`,
+                csvSafe(v.mobile),
+                `"${csvSafe(v.company)}"`,
+                `"${csvSafe(v.host)}"`,
+                `"${csvSafe(v.purpose)}"`,
+                `"${csvSafe(v.plant || '')}"`,
+                `"${csvSafe(v.assets || '')}"`,
+                csvSafe(v.visit_date),
+                csvSafe(v.visit_time),
+                csvSafe(v.entry_time || ''),
+                csvSafe(v.exit_time || ''),
+                csvSafe(v.status),
+                `"${csvSafe(photoUrl)}"`
             ];
             csvRows.push(row.join(','));
         });

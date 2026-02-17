@@ -10,11 +10,23 @@ const app = new Hono();
 
 // CORS for standalone worker
 app.use('/*', cors({
-    origin: '*', // For development, update with frontend URL later
+    origin: (origin, c) => {
+        if (!origin) return '*';
+
+        const configuredOrigins = (c.env.CORS_ORIGIN || '')
+            .split(',')
+            .map((item: string) => item.trim())
+            .filter(Boolean);
+
+        if (configuredOrigins.length === 0) {
+            return origin === 'http://localhost:5173' ? origin : '';
+        }
+
+        return configuredOrigins.includes(origin) ? origin : '';
+    },
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
 }));
 
-const SECRET_KEY = 'supersecretkeyshouldbechanged'; // Fallback
 
 // Initialize Supabase Client
 const getSupabase = (env: any) => createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
@@ -22,7 +34,8 @@ const getSupabase = (env: any) => createClient(env.SUPABASE_URL, env.SUPABASE_SE
 // --- Auth Middleware ---
 // Using Hono's built-in JWT middleware for protected routes
 const authMiddleware = async (c: any, next: any) => {
-    const secret = c.env.JWT_SECRET || SECRET_KEY;
+    const secret = c.env.JWT_SECRET;
+    if (!secret) return c.json({ message: 'Server misconfiguration: JWT secret missing' }, 500);
     const handler = jwt({ secret });
     return handler(c, async () => {
         const payload = c.get('jwtPayload');
@@ -75,7 +88,8 @@ app.post('/auth/login', async (c) => {
 
     if (!isMatch) return c.json({ message: 'Invalid credentials' }, 401);
 
-    const secret = c.env.JWT_SECRET || SECRET_KEY;
+    const secret = c.env.JWT_SECRET;
+    if (!secret) return c.json({ message: 'Server misconfiguration: JWT secret missing' }, 500);
     const token = await sign({
         id: user.id,
         username: user.username,
