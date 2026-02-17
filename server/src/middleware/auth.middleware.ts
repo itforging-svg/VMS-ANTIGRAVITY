@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'supersecretkeyshouldbechanged';
 
 export interface AuthRequest extends Request {
     user?: any;
@@ -13,7 +12,10 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
     if (!token) return res.sendStatus(401);
 
-    jwt.verify(token, SECRET_KEY, (err, user) => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return res.status(500).json({ message: 'Server misconfiguration: JWT secret missing' });
+
+    jwt.verify(token, secret, (err, user) => {
         if (err) return res.sendStatus(403);
         req.user = user;
         next();
