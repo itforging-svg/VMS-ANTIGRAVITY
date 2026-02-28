@@ -71,7 +71,7 @@ export const PrintSlip = () => {
                     <div className="flex gap-4">
                         {/* Photo */}
                         <div className="w-24 h-24 bg-gray-200 border border-slate-400 overflow-hidden">
-                            <img src={`${API_URL}${visitor.photoPath}`} alt="Visitor" className="w-full h-full object-cover" />
+                            <img src={visitor.photoPath.startsWith('http') ? visitor.photoPath : `${API_URL}${visitor.photoPath}`} alt="Visitor" className="w-full h-full object-cover" />
                         </div>
 
                         {/* Details */}

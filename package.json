@@ -8,6 +8,7 @@
     "migrate": "npx ts-node scripts/migrate-to-supabase.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.93.3",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {

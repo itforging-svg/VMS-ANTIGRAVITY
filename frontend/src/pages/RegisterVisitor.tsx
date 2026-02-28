@@ -204,6 +204,12 @@ export const RegisterVisitor = () => {
             const res = await fetch(`${API_URL}/api/visitors/search?mobile=${formData.mobile}`);
             if (res.ok) {
                 const data = await res.json();
+
+                // Warn if blacklisted
+                if (data.isBlacklisted) {
+                    alert("⚠️ WARNING: This visitor is BLACKLISTED!");
+                }
+
                 setFormData(prev => ({
                     ...prev,
                     name: data.name || '',
@@ -216,11 +222,12 @@ export const RegisterVisitor = () => {
 
                 // Auto-fill photo if available
                 if (data.photoPath) {
-                    // Handle full URL from Supabase vs legacy relative path
                     setImgSrc(data.photoPath.startsWith('http') ? data.photoPath : `${API_URL}${data.photoPath}`);
                 }
 
-                alert('Welcome back! Details found and autofilled.');
+                if (!data.isBlacklisted) {
+                    alert('Welcome back! Details found and autofilled.');
+                }
             } else {
                 alert('No previous visitor found with this mobile number.');
             }
@@ -243,6 +250,11 @@ export const RegisterVisitor = () => {
             const res = await fetch(`${API_URL}/api/visitors/search?aadhar=${formData.aadharNo}`);
             if (res.ok) {
                 const data = await res.json();
+
+                if (data.isBlacklisted) {
+                    alert("⚠️ WARNING: This visitor is BLACKLISTED!");
+                }
+
                 setFormData(prev => ({
                     ...prev,
                     name: data.name || '',
@@ -258,10 +270,9 @@ export const RegisterVisitor = () => {
                     setImgSrc(data.photoPath.startsWith('http') ? data.photoPath : `${API_URL}${data.photoPath}`);
                 }
 
-                alert('Welcome back! Details found and autofilled.');
-            } else if (res.status === 403) {
-                const data = await res.json();
-                alert(data.message);
+                if (!data.isBlacklisted) {
+                    alert('Welcome back! Details found and autofilled.');
+                }
             } else {
                 alert('No previous visitor found with this Aadhar number.');
             }

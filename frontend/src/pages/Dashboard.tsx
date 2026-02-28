@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown, Pen, Trash2 } from 'lucide-react';
+import { LogOut, CheckCircle, XCircle, Printer, DoorOpen, Users, Clock, FileText, Search, ChevronDown, Pen, Trash2, ExternalLink } from 'lucide-react';
 import { format, subDays, subMonths, subYears } from 'date-fns';
 import { API_URL } from '../config';
 import { EditVisitorModal } from '../components/EditVisitorModal';
@@ -48,8 +48,22 @@ export const Dashboard = () => {
             const res = await fetch(url, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            if (!res.ok) {
+                console.error('Fetch Failed:', res.status, res.statusText);
+                if (res.status === 401) window.location.href = '/'; // Redirect if unauthorized
+                setLoading(false);
+                return;
+            }
+
             const data = await res.json();
-            setVisitors(data);
+
+            if (Array.isArray(data)) {
+                setVisitors(data);
+            } else {
+                console.error('Invalid Data Format:', data);
+                setVisitors([]);
+            }
             setLoading(false);
         } catch (error) {
             console.error(error);
@@ -175,6 +189,12 @@ export const Dashboard = () => {
                     </div>
 
                     <div className="flex items-center gap-6">
+                        <button
+                            onClick={() => window.location.href = 'https://vms-antigravity.pages.dev/'}
+                            className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-emerald-500/30 transition-all flex items-center gap-2"
+                        >
+                            <ExternalLink size={14} /> Visitor Management
+                        </button>
                         <div className="hidden md:block text-right">
                             <div className="text-sm font-semibold">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}</div>
                             <div className="text-xs text-slate-400">System Active</div>
@@ -417,8 +437,8 @@ export const Dashboard = () => {
                                                             </button>
                                                         </>
                                                     )}
-                                                    {/* Allow reprint even after exit */}
-                                                    {(v.status === 'EXITED' || v.status === 'APPROVED') && v.exitTime && (
+                                                    {/* Allow reprint for EXITED (always) or APPROVED (with exit time) */}
+                                                    {(v.status === 'EXITED' || (v.status === 'APPROVED' && v.exitTime)) && (
                                                         <button onClick={() => handlePrint(v.id)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all shadow-sm" title="Reprint Slip">
                                                             <Printer size={18} />
                                                         </button>
