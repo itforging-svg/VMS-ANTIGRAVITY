@@ -29,9 +29,15 @@ router.get('/csv', authenticateToken, async (req, res) => {
 
         // Filter by plant
         if ((req as any).user && (req as any).user.plant) {
-            query += ` AND plant = $${paramIndex}`;
-            params.push((req as any).user.plant);
-            paramIndex++;
+            if ((req as any).user.plant === 'Seamsless Division') {
+                query += ` AND (plant = $${paramIndex} OR plant = 'Wire Plant')`;
+                params.push((req as any).user.plant);
+                paramIndex++;
+            } else {
+                query += ` AND plant = $${paramIndex}`;
+                params.push((req as any).user.plant);
+                paramIndex++;
+            }
         }
 
         query += ' ORDER BY id DESC';

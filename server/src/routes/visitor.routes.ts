@@ -100,9 +100,15 @@ router.get('/', authenticateToken, async (req, res) => {
 
         // Filter by plant if user is not a super admin
         if ((req as any).user && (req as any).user.plant) {
-            query += ` AND plant = $${paramIndex}`;
-            params.push((req as any).user.plant);
-            paramIndex++;
+            if ((req as any).user.plant === 'Seamsless Division') {
+                query += ` AND (plant = $${paramIndex} OR plant = 'Wire Plant')`;
+                params.push((req as any).user.plant);
+                paramIndex++;
+            } else {
+                query += ` AND plant = $${paramIndex}`;
+                params.push((req as any).user.plant);
+                paramIndex++;
+            }
         }
 
         query += ' ORDER BY id DESC';
@@ -322,8 +328,17 @@ router.patch('/:id/status', authenticateToken, async (req, res) => {
         const visitor = await db.get('SELECT * FROM visitors WHERE id = $1', [id]);
         if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
 
-        if ((req as any).user && (req as any).user.plant && (visitor as any).plant !== (req as any).user.plant) {
-            return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+        if ((req as any).user && (req as any).user.plant) {
+            const userPlant = (req as any).user.plant;
+            const visitorPlant = (visitor as any).plant;
+
+            if (userPlant === 'Seamsless Division') {
+                if (visitorPlant !== 'Seamsless Division' && visitorPlant !== 'Wire Plant') {
+                    return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+                }
+            } else if (visitorPlant !== userPlant) {
+                return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+            }
         }
 
         if (!['APPROVED', 'REJECTED', 'EXITED'].includes(status)) {
@@ -420,8 +435,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
         const visitor = await db.get('SELECT * FROM visitors WHERE id = $1', [id]);
         if (!visitor) return res.status(404).json({ message: 'Visitor not found' });
 
-        if ((req as any).user && (req as any).user.plant && (visitor as any).plant !== (req as any).user.plant) {
-            return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+        if ((req as any).user && (req as any).user.plant) {
+            const userPlant = (req as any).user.plant;
+            const visitorPlant = (visitor as any).plant;
+
+            if (userPlant === 'Seamsless Division') {
+                if (visitorPlant !== 'Seamsless Division' && visitorPlant !== 'Wire Plant') {
+                    return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+                }
+            } else if (visitorPlant !== userPlant) {
+                return res.status(403).json({ message: 'Access denied: Visitor belongs to a different plant' });
+            }
         }
 
         const sql = `
